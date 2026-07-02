@@ -1,0 +1,16 @@
+node_modules/
+Frontend/node_modules/
+Backend/node_modules/
+graphify-out/
+venv/
+AIService/venv/
+__pycache__/
+.env
+.env.*
+*.log
+test-nse.js
+test-proxy.js
+*.sql
+*.sh
+server_deployment_journal.md
+Frontend/README.md
