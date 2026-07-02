@@ -69,8 +69,10 @@ export default function AdminDashboard({ setTab }) {
     if (!silent) setError(null);
     try {
       if (tabName === 'ai') {
-        const data = await authFetch('/api/admin/settings');
-        setAiSettings(data);
+        if (!silent) {
+          const data = await authFetch('/api/admin/settings');
+          setAiSettings(data);
+        }
         const statsData = await authFetch('/api/admin/ai-stats');
         setAiStats(statsData);
       } else if (tabName === 'settings') {
