@@ -50,6 +50,7 @@ const initSession = async (force = false) => {
       },
       timeout: 10000,
       httpsAgent,
+      proxy: false,
       validateStatus: () => true // Allow any status code since it might be 404
     });
 
@@ -84,7 +85,8 @@ const nseFetch = async (url, params = {}, retries = 2) => {
       params,
       headers: getHeaders(),
       timeout: 10000,
-      httpsAgent
+      httpsAgent,
+      proxy: false
     });
     return response.data;
   } catch (error) {
@@ -266,7 +268,8 @@ const nseService = {
           'Referer': `https://charting.nseindia.com/?symbol=${formattedSymbol}`
         },
         timeout: 10000,
-        httpsAgent
+        httpsAgent,
+        proxy: false
       });
       return response.data;
     } catch (error) {
@@ -324,7 +327,8 @@ const nseService = {
           'Referer': `https://charting.nseindia.com/?symbol=${resolvedSymbol}`
         },
         timeout: 10000,
-        httpsAgent
+        httpsAgent,
+        proxy: false
       });
 
       return response.data;
