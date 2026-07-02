@@ -545,6 +545,8 @@ export default function QuoteDetail({ symbol }) {
       if (!isBackground) {
         setLoading(true);
         setError(null);
+        setStock(null);
+        setChartData([]);
       }
       try {
         const fallbackMock = getStockData(symbol);
@@ -860,9 +862,18 @@ export default function QuoteDetail({ symbol }) {
 
   if (loading && !stock) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center bg-surface h-full">
-        <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-        <div className="mt-4 text-sm font-mono text-on-surface-variant">Fetching data from NSE...</div>
+      <div className="flex-1 flex flex-col items-center justify-center bg-surface h-[60vh] w-full">
+        <div className="flex items-end gap-1.5 h-12 mb-6">
+          <div className="w-2.5 bg-[#4184f3] rounded-t-sm h-4 animate-[bounce_1s_infinite_0ms]"></div>
+          <div className="w-2.5 bg-[#4184f3] rounded-t-sm h-8 animate-[bounce_1s_infinite_100ms]"></div>
+          <div className="w-2.5 bg-[#4184f3] rounded-t-sm h-6 animate-[bounce_1s_infinite_200ms]"></div>
+          <div className="w-2.5 bg-[#4184f3] rounded-t-sm h-10 animate-[bounce_1s_infinite_300ms]"></div>
+          <div className="w-2.5 bg-[#4184f3] rounded-t-sm h-5 animate-[bounce_1s_infinite_400ms]"></div>
+        </div>
+        <div className="text-sm font-mono text-on-surface-variant uppercase tracking-widest flex flex-col items-center gap-1">
+          <span className="font-bold text-[#4184f3]">{symbol}</span>
+          <span className="text-xs">Fetching Market Data...</span>
+        </div>
       </div>
     );
   }
