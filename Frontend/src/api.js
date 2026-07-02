@@ -8,6 +8,12 @@ export const api = {
     return res.json();
   },
 
+  getBlogs: async () => {
+    const res = await fetch(`${API_BASE_URL}/blogs`);
+    if (!res.ok) throw new Error('Failed to fetch blogs');
+    return res.json();
+  },
+
   getOrderBook: async (symbol) => {
     const res = await fetch(`${API_BASE_URL}/stocks/orderbook/${encodeURIComponent(symbol)}`);
     if (!res.ok) throw new Error('Failed to fetch order book');
@@ -313,10 +319,26 @@ export const api = {
           return outputArray;
         };
         
-        const subscription = await swReg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
-        });
+        let subscription;
+        try {
+          subscription = await swReg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+          });
+        } catch (subErr) {
+          // If the key has changed, the browser will throw an error. We need to unsubscribe first.
+          const existingSub = await swReg.pushManager.getSubscription();
+          if (existingSub) {
+            await existingSub.unsubscribe();
+            // Try subscribing again with the new key
+            subscription = await swReg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: urlBase64ToUint8Array(vapidPublicKey)
+            });
+          } else {
+            throw subErr;
+          }
+        }
         
         await api.subscribeToPushNotifications(subscription);
         if (!silent) alert('Push notifications enabled!');

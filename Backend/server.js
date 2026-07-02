@@ -84,7 +84,10 @@ let appSettingsCache = {
   maintenance_mode: false,
   alerts_interval_min: 1,
   announcements_interval_min: 5,
-  corp_action_interval_min: 10
+  corp_action_interval_min: 10,
+  brave_api_key: null,
+  blog_fetches_per_day: 2,
+  blog_search_topic: 'india stock market'
 };
 
 const refreshAppSettings = async () => {
@@ -114,7 +117,8 @@ app.use(checkMaintenanceMode);
 global.workerStatus = {
   alerts: { lastRun: null, status: 'idle' },
   announcements: { lastRun: null, status: 'idle' },
-  corpActions: { lastRun: null, status: 'idle' }
+  corpActions: { lastRun: null, status: 'idle' },
+  blogs: { lastRun: null, status: 'idle' }
 };
 
 // ---------------- ADMIN ROUTES ----------------
@@ -247,11 +251,11 @@ app.get('/api/admin/app-settings', authenticateToken, requireAdmin, async (req, 
 });
 
 app.post('/api/admin/app-settings', authenticateToken, requireAdmin, async (req, res) => {
-  const { maintenance_mode, alerts_interval_min, announcements_interval_min, corp_action_interval_min, summarize_all_announcements } = req.body;
+  const { maintenance_mode, alerts_interval_min, announcements_interval_min, corp_action_interval_min, summarize_all_announcements, brave_api_key, blog_fetches_per_day, blog_search_topic } = req.body;
   try {
     await pool.query(
-      'UPDATE app_settings SET maintenance_mode = $1, alerts_interval_min = $2, announcements_interval_min = $3, corp_action_interval_min = $4, summarize_all_announcements = $5',
-      [maintenance_mode, alerts_interval_min, announcements_interval_min, corp_action_interval_min, summarize_all_announcements]
+      'UPDATE app_settings SET maintenance_mode = $1, alerts_interval_min = $2, announcements_interval_min = $3, corp_action_interval_min = $4, summarize_all_announcements = $5, brave_api_key = $6, blog_fetches_per_day = $7, blog_search_topic = $8',
+      [maintenance_mode, alerts_interval_min, announcements_interval_min, corp_action_interval_min, summarize_all_announcements, brave_api_key, blog_fetches_per_day, blog_search_topic]
     );
     await refreshAppSettings();
     res.json({ message: 'App settings updated' });
@@ -573,6 +577,17 @@ app.get('/api/stocks/market-status', async (req, res) => {
         }
       ]
     });
+  }
+});
+
+// ---------------- BLOGS ROUTES ----------------
+app.get('/api/blogs', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM blogs ORDER BY published_at DESC, created_at DESC LIMIT 50');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching blogs:', error);
+    res.status(500).json({ error: 'Failed to fetch blogs' });
   }
 });
 
@@ -1513,6 +1528,56 @@ function startCorporateActionsWorker() {
   runWorker();
 }
 
+function startBlogsWorker() {
+  let isFirstRun = true;
+  const runWorker = async () => {
+    try {
+      global.workerStatus.blogs.status = 'running';
+      global.workerStatus.blogs.lastRun = new Date().toISOString();
+
+      const apiKey = appSettingsCache.brave_api_key;
+      const topic = appSettingsCache.blog_search_topic || 'india stock market';
+      
+      if (apiKey && apiKey.trim() !== '') {
+        const response = await fetch(`https://api.search.brave.com/res/v1/news/search?q=${encodeURIComponent(topic)}&count=10&spellcheck=1`, {
+          headers: {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip',
+            'X-Subscription-Token': apiKey
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data && data.results) {
+            for (const article of data.results) {
+              const category = article.meta_url?.netloc || 'MARKET NEWS';
+              const imageUrl = article.thumbnail?.src || null;
+              await pool.query(`
+                INSERT INTO blogs (title, description, category, category_color, url, image_url, published_at)
+                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                ON CONFLICT (url) DO NOTHING
+              `, [article.title, article.description, category.toUpperCase().substring(0, 50), 'text-[#005cab]', article.url, imageUrl, new Date().toISOString()]);
+            }
+          }
+        } else {
+          console.error('Brave API Error:', response.status, await response.text());
+        }
+      }
+    } catch (err) {
+      console.error('Blogs worker error:', err);
+    } finally {
+      isFirstRun = false;
+      global.workerStatus.blogs.status = 'idle';
+      const fetchesPerDay = appSettingsCache.blog_fetches_per_day || 2;
+      const delayHours = 24 / fetchesPerDay;
+      setTimeout(runWorker, delayHours * 60 * 60 * 1000);
+    }
+  };
+  // Run after a short delay on startup
+  setTimeout(runWorker, 10000);
+}
+
 // Start server after initializing DB tables
 async function seedAdminUser() {
   const adminEmail = process.env.ADMIN_EMAIL;
@@ -1546,6 +1611,7 @@ initializeDB()
     startAlertsWorker();
     startAnnouncementsWorker();
     startCorporateActionsWorker();
+    startBlogsWorker();
     const server = app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
     });

@@ -56,6 +56,16 @@ export default function Markets({ onSelectStock }) {
   const [customFromDate, setCustomFromDate] = useState('');
   const [customToDate, setCustomToDate] = useState('');
 
+  useEffect(() => {
+    const handleSetMarketsView = (e) => {
+      if (e.detail) {
+        setViewMode(e.detail);
+      }
+    };
+    window.addEventListener('setMarketsView', handleSetMarketsView);
+    return () => window.removeEventListener('setMarketsView', handleSetMarketsView);
+  }, []);
+
   const fetchAnnouncements = () => {
     if (viewMode !== 'announcements') return;
     setLoadingAnnouncements(true);

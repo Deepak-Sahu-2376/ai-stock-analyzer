@@ -184,7 +184,25 @@ const initializeDB = async () => {
     // Upgrade app_settings to support new toggles
     await client.query(`
       ALTER TABLE app_settings
-      ADD COLUMN IF NOT EXISTS summarize_all_announcements BOOLEAN DEFAULT false;
+      ADD COLUMN IF NOT EXISTS summarize_all_announcements BOOLEAN DEFAULT false,
+      ADD COLUMN IF NOT EXISTS brave_api_key TEXT,
+      ADD COLUMN IF NOT EXISTS blog_fetches_per_day INTEGER DEFAULT 2,
+      ADD COLUMN IF NOT EXISTS blog_search_topic TEXT DEFAULT 'india stock market';
+    `);
+
+    // Create blogs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS blogs (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT,
+        category VARCHAR(50),
+        category_color VARCHAR(50),
+        url TEXT UNIQUE NOT NULL,
+        image_url TEXT,
+        published_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     await client.query('COMMIT');

@@ -15,6 +15,8 @@ import { api } from './api';
 
 import TopTicker from './components/TopTicker';
 
+import ScrollToTopButton from './components/ScrollToTopButton';
+
 function App() {
 
   const getInitialTab = () => {
@@ -107,6 +109,10 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentTab, selectedSymbol]);
+
   return (
     <div className="min-h-screen flex flex-col bg-white text-on-surface pb-16 md:pb-0">
       <Navbar 
@@ -144,6 +150,7 @@ function App() {
       </div>
       <Footer setTab={setTab} />
       <BottomNav currentTab={currentTab} setTab={setTab} />
+      <ScrollToTopButton />
     </div>
   );
 }

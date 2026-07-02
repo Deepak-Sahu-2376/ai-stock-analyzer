@@ -203,6 +203,17 @@ export default function Dashboard({ setTab, onSelectStock }) {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
       });
       if (!res.ok) {
+        if (res.status === 404) {
+          // No subscription found on backend. Force re-sync.
+          await handleEnablePush(true);
+          const retryRes = await fetch(`${API_BASE_URL}/push/test`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+          });
+          if (!retryRes.ok) throw new Error('Failed to send test push even after re-syncing');
+          alert('Test push notification sent!');
+          return;
+        }
         const data = await res.json();
         throw new Error(data.error || 'Failed to send test push notification');
       }
@@ -371,8 +382,13 @@ export default function Dashboard({ setTab, onSelectStock }) {
               <span className="material-icons text-[#422d7d] text-sm">campaign</span>
               <h2 className="text-xs font-semibold text-[#444] uppercase tracking-wider">Recent Equities Announcements</h2>
             </div>
-            <button onClick={() => setTab('markets')} className="text-xs text-primary hover:underline font-bold flex items-center gap-1">
-              View All <span className="material-icons text-sm">arrow_forward</span>
+            <button onClick={() => {
+              setTab('markets');
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('setMarketsView', { detail: 'announcements' }));
+              }, 50);
+            }} className="text-xs text-primary font-bold flex items-center gap-1 group">
+              <span className="group-hover:underline">View All</span> <span className="material-icons text-sm">arrow_forward</span>
             </button>
           </div>
           

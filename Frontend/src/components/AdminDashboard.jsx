@@ -20,7 +20,10 @@ export default function AdminDashboard({ setTab }) {
     alerts_interval_min: 1,
     announcements_interval_min: 5,
     corp_action_interval_min: 10,
-    summarize_all_announcements: false
+    summarize_all_announcements: false,
+    brave_api_key: '',
+    blog_fetches_per_day: 2,
+    blog_search_topic: 'india stock market'
   });
 
   const [users, setUsers] = useState([]);
@@ -539,6 +542,24 @@ export default function AdminDashboard({ setTab }) {
                     </div>
                   </div>
                   <p className="text-xs text-gray-400 mt-2">Intervals determine how often the server checks the NSE. Lower intervals mean faster updates but higher server load.</p>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase mb-3 border-b pb-2">Brave Search API (Blogs)</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Brave API Key</label>
+                      <input type="password" value={appSettings.brave_api_key || ''} onChange={(e) => setAppSettings({...appSettings, brave_api_key: e.target.value})} placeholder="Enter Brave Search API Key..." className="w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-[#4184f3] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Search Topic / Query</label>
+                      <input type="text" value={appSettings.blog_search_topic || ''} onChange={(e) => setAppSettings({...appSettings, blog_search_topic: e.target.value})} placeholder="e.g. india stock market" className="w-full border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-[#4184f3] focus:outline-none" />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 mb-1">Fetches Per Day</label>
+                      <input type="number" min="1" max="24" value={appSettings.blog_fetches_per_day || 2} onChange={(e) => setAppSettings({...appSettings, blog_fetches_per_day: parseInt(e.target.value)})} className="w-full md:w-1/3 border border-gray-300 rounded px-3 py-1.5 text-xs focus:border-[#4184f3] focus:outline-none" />
+                    </div>
+                  </div>
                 </div>
 
                 <button type="submit" className="bg-[#4184f3] text-white py-2 px-6 rounded text-sm font-medium">Save App Settings</button>
