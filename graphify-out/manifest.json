@@ -1,0 +1,247 @@
+{
+  "/home/deepak-sahu/Stocks/Backend/db.js": {
+    "mtime": 1782045365.654568,
+    "ast_hash": "8113aa17988ec00bb491422c33fd456b",
+    "semantic_hash": "8113aa17988ec00bb491422c33fd456b"
+  },
+  "/home/deepak-sahu/Stocks/Backend/nseService.js": {
+    "mtime": 1782204858.8532338,
+    "ast_hash": "0849ca122569898cdb7ca8fb1d7a6b72",
+    "semantic_hash": "0849ca122569898cdb7ca8fb1d7a6b72"
+  },
+  "/home/deepak-sahu/Stocks/Backend/package.json": {
+    "mtime": 1782190220.706536,
+    "ast_hash": "4888d66e13c8aa846fa1e10726aee63d",
+    "semantic_hash": "4888d66e13c8aa846fa1e10726aee63d"
+  },
+  "/home/deepak-sahu/Stocks/Backend/server.js": {
+    "mtime": 1782208554.998006,
+    "ast_hash": "12c0e49a041677e01a749f48bd7312a6",
+    "semantic_hash": "12c0e49a041677e01a749f48bd7312a6"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/eslint.config.js": {
+    "mtime": 1782042979.3908927,
+    "ast_hash": "3aa4b57d7f08181d86bde52a4dcb7f22",
+    "semantic_hash": "3aa4b57d7f08181d86bde52a4dcb7f22"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/package.json": {
+    "mtime": 1782043153.1426878,
+    "ast_hash": "4a820eb501a594ac6cff41cb31ce02f3",
+    "semantic_hash": "4a820eb501a594ac6cff41cb31ce02f3"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/postcss.config.js": {
+    "mtime": 1782043023.4377053,
+    "ast_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0",
+    "semantic_hash": "ef3ba2a81ba19f8ea5ddf625521e96f0"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/App.jsx": {
+    "mtime": 1782208913.9323509,
+    "ast_hash": "3f15f9de952e23836ddcd10f703cae8d",
+    "semantic_hash": "3f15f9de952e23836ddcd10f703cae8d"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/api.js": {
+    "mtime": 1782208798.026089,
+    "ast_hash": "5889ad76548a1fb79c713e80073782ee",
+    "semantic_hash": "5889ad76548a1fb79c713e80073782ee"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Blogs.jsx": {
+    "mtime": 1782044034.5373878,
+    "ast_hash": "e1127a74bea639d00f51fffa3234b0c9",
+    "semantic_hash": "e1127a74bea639d00f51fffa3234b0c9"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Footer.jsx": {
+    "mtime": 1782044676.2368994,
+    "ast_hash": "11c253fd1fb66e2cc7cc4f34cb4ab739",
+    "semantic_hash": "11c253fd1fb66e2cc7cc4f34cb4ab739"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Home.jsx": {
+    "mtime": 1782204168.3238509,
+    "ast_hash": "7298144f533a9a57217dbcf492c73478",
+    "semantic_hash": "7298144f533a9a57217dbcf492c73478"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Login.jsx": {
+    "mtime": 1782045446.7828555,
+    "ast_hash": "61161812df991524d65a6777ff5daa59",
+    "semantic_hash": "61161812df991524d65a6777ff5daa59"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Markets.jsx": {
+    "mtime": 1782207846.3659842,
+    "ast_hash": "948bf41d9a32e243f4a9f813d93633c1",
+    "semantic_hash": "948bf41d9a32e243f4a9f813d93633c1"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/Navbar.jsx": {
+    "mtime": 1782208922.4035892,
+    "ast_hash": "e84520199521e11e0d85b57b5d1c286a",
+    "semantic_hash": "e84520199521e11e0d85b57b5d1c286a"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/QuoteDetail.jsx": {
+    "mtime": 1782205829.676969,
+    "ast_hash": "cbc9a832328e40f5e81884e3fd6fa406",
+    "semantic_hash": "cbc9a832328e40f5e81884e3fd6fa406"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/components/SignUp.jsx": {
+    "mtime": 1782045462.9764025,
+    "ast_hash": "504f02b370faa05d2093b2b7effcad04",
+    "semantic_hash": "504f02b370faa05d2093b2b7effcad04"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/main.jsx": {
+    "mtime": 1782042979.397763,
+    "ast_hash": "e13723e2574429d9a6d849727e3ff695",
+    "semantic_hash": "e13723e2574429d9a6d849727e3ff695"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/tailwind.config.js": {
+    "mtime": 1782044657.611275,
+    "ast_hash": "523979f38b9f92fcc048877ef8a961ff",
+    "semantic_hash": "523979f38b9f92fcc048877ef8a961ff"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/vite.config.js": {
+    "mtime": 1782208785.63474,
+    "ast_hash": "075f5b128d7601265f6005bfe47efcce",
+    "semantic_hash": "075f5b128d7601265f6005bfe47efcce"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/README.md": {
+    "mtime": 1782042979.389909,
+    "ast_hash": "a28dc4cb878325f3e9e5649f3e1469ac",
+    "semantic_hash": "a28dc4cb878325f3e9e5649f3e1469ac"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/index.html": {
+    "mtime": 1782043052.2136633,
+    "ast_hash": "1e498ebc87e614a07acb4bb14cd5e409",
+    "semantic_hash": "1e498ebc87e614a07acb4bb14cd5e409"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/Stock_Island.svg": {
+    "mtime": 1782044443.441833,
+    "ast_hash": "655c81c3c844783887cb11e15df322e8",
+    "semantic_hash": "655c81c3c844783887cb11e15df322e8"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/Stock_Island.svg": {
+    "mtime": 1782044648.5942922,
+    "ast_hash": "655c81c3c844783887cb11e15df322e8",
+    "semantic_hash": "655c81c3c844783887cb11e15df322e8"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/favicon.svg": {
+    "mtime": 1782042979.3928351,
+    "ast_hash": "7e840862161341271697daa99a40d76b",
+    "semantic_hash": "7e840862161341271697daa99a40d76b"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/fed_pause.png": {
+    "mtime": 1782044026.6810107,
+    "ast_hash": "1eae20b12f94f296b4f88ef7cd8037c2",
+    "semantic_hash": "1eae20b12f94f296b4f88ef7cd8037c2"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/icons.svg": {
+    "mtime": 1782042979.3932455,
+    "ast_hash": "3b4fcfcf393eca4d264dca4a4663bc37",
+    "semantic_hash": "3b4fcfcf393eca4d264dca4a4663bc37"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/mobile_updates.png": {
+    "mtime": 1782044003.7538838,
+    "ast_hash": "60786962a447b41f4b411d367afca173",
+    "semantic_hash": "60786962a447b41f4b411d367afca173"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/options_basics.png": {
+    "mtime": 1782043952.4996378,
+    "ast_hash": "ae592994a6ae76ed2c8db82f247c4717",
+    "semantic_hash": "ae592994a6ae76ed2c8db82f247c4717"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/supply_chain.png": {
+    "mtime": 1782043979.618996,
+    "ast_hash": "dcb4d73e588a97e6e305f8ebebaf8940",
+    "semantic_hash": "dcb4d73e588a97e6e305f8ebebaf8940"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/public/tech_stock_graph.png": {
+    "mtime": 1782043928.8839288,
+    "ast_hash": "ef7a64a87c4beea33b86954022e445aa",
+    "semantic_hash": "ef7a64a87c4beea33b86954022e445aa"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/assets/hero.png": {
+    "mtime": 1782042979.3961623,
+    "ast_hash": "aead493361b27e7510691c5d7072dfc1",
+    "semantic_hash": "aead493361b27e7510691c5d7072dfc1"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/assets/react.svg": {
+    "mtime": 1782042979.3967142,
+    "ast_hash": "f0402b67b6ce880f65666bb49e841696",
+    "semantic_hash": "f0402b67b6ce880f65666bb49e841696"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/src/assets/vite.svg": {
+    "mtime": 1782042979.3970428,
+    "ast_hash": "9960a24288958394ac50e57ff638b036",
+    "semantic_hash": "9960a24288958394ac50e57ff638b036"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test-candles.js": {
+    "mtime": 1782132148.445054,
+    "ast_hash": "f8863841a79031effded7d5a0bac393c",
+    "semantic_hash": "f8863841a79031effded7d5a0bac393c"
+  },
+  "/home/deepak-sahu/Stocks/Frontend/.vscode/settings.json": {
+    "mtime": 1782135682.8465743,
+    "ast_hash": "f0d54371e04d65b671cb5af1317474f8",
+    "semantic_hash": "f0d54371e04d65b671cb5af1317474f8"
+  },
+  "/home/deepak-sahu/Stocks/Backend/nseService_test.js": {
+    "mtime": 1782188954.4729676,
+    "ast_hash": "16b2c60efd30ec31b25a405184a91ab9",
+    "semantic_hash": "16b2c60efd30ec31b25a405184a91ab9"
+  },
+  "/home/deepak-sahu/Stocks/Backend/nseService_test_chart.js": {
+    "mtime": 1782189319.9114401,
+    "ast_hash": "1054d707c146799385448b6611cac5dd",
+    "semantic_hash": "1054d707c146799385448b6611cac5dd"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_bank_msg.js": {
+    "mtime": 1782192785.5868843,
+    "ast_hash": "d66c9afa6743ec75ad7221c31eb80539",
+    "semantic_hash": "d66c9afa6743ec75ad7221c31eb80539"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_bank_ws.js": {
+    "mtime": 1782192767.9864097,
+    "ast_hash": "039937c9d359bd383b0fc4626a502f81",
+    "semantic_hash": "039937c9d359bd383b0fc4626a502f81"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_chart.js": {
+    "mtime": 1782189277.89913,
+    "ast_hash": "adb8c1ae58a6845adb8d88d85c0aac78",
+    "semantic_hash": "adb8c1ae58a6845adb8d88d85c0aac78"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_chart1d.js": {
+    "mtime": 1782189307.3570487,
+    "ast_hash": "32178baaa45e9c404f5fa13f27797693",
+    "semantic_hash": "32178baaa45e9c404f5fa13f27797693"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_index_chart.js": {
+    "mtime": 1782194169.1143057,
+    "ast_hash": "80db1507713c75df48053833c0ef4470",
+    "semantic_hash": "80db1507713c75df48053833c0ef4470"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_index_data.js": {
+    "mtime": 1782194150.1967916,
+    "ast_hash": "e592ce771db9b0c6bf6d7bef50d2b4fd",
+    "semantic_hash": "e592ce771db9b0c6bf6d7bef50d2b4fd"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_index_msg.js": {
+    "mtime": 1782192747.6718824,
+    "ast_hash": "dffb76bda1194c0de4eae76e704bb6a1",
+    "semantic_hash": "dffb76bda1194c0de4eae76e704bb6a1"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_index_ws.js": {
+    "mtime": 1782192729.5654123,
+    "ast_hash": "43179323357f63934cd96973b2ca0f91",
+    "semantic_hash": "43179323357f63934cd96973b2ca0f91"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_nse.js": {
+    "mtime": 1782188970.001462,
+    "ast_hash": "98e1b7d2caea11bd3489252e8be852d3",
+    "semantic_hash": "98e1b7d2caea11bd3489252e8be852d3"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_ws.js": {
+    "mtime": 1782190217.4454472,
+    "ast_hash": "b961c3b2f1bcfe23f8a0e24d9f371c3c",
+    "semantic_hash": "b961c3b2f1bcfe23f8a0e24d9f371c3c"
+  },
+  "/home/deepak-sahu/Stocks/Backend/test_ws_browser.js": {
+    "mtime": 1782190241.4851031,
+    "ast_hash": "5a6f4e4f34bb1d34a63d4521b468dc60",
+    "semantic_hash": "5a6f4e4f34bb1d34a63d4521b468dc60"
+  }
+}
