@@ -25,17 +25,23 @@ export default function Blogs() {
   const categories = ['All Posts', ...Array.from(new Set(blogs.map(b => b.category)))].slice(0, 8);
 
   const filteredBlogs = blogs.filter(blog => {
-    const matchesSearch = blog.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          blog.desc.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = (blog.title || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (blog.description || '').toLowerCase().includes(searchQuery.toLowerCase());
     
     let normFilter = activeFilter.toUpperCase();
-    if (activeFilter === 'All Posts') normFilter = 'ALL';
+    if (activeFilter === 'All Posts' || activeFilter === 'All') normFilter = 'ALL';
     
     const matchesFilter = normFilter === 'ALL' || (blog.category && blog.category.toUpperCase() === normFilter);
     return matchesSearch && matchesFilter;
   });
 
-  const featuredBlog = blogs.length > 0 ? blogs[0] : null;
+  const isSearchingOrFiltering = searchQuery.trim().length > 0 || (activeFilter !== 'All' && activeFilter !== 'All Posts');
+  const featuredBlog = (!isSearchingOrFiltering && blogs.length > 0) ? blogs[0] : null;
+  
+  // Exclude featured blog from the grid
+  const gridBlogs = featuredBlog 
+    ? filteredBlogs.filter(b => b.id !== featuredBlog.id)
+    : filteredBlogs;
 
   return (
     <main className="flex-grow w-full max-w-[1200px] mx-auto sm:px-6 sm:py-8 bg-surface-container-lowest pb-12">
@@ -117,11 +123,11 @@ export default function Blogs() {
              <div className="animate-spin h-8 w-8 border-4 border-gray-200 border-t-primary rounded-full"></div>
              <span className="text-sm font-medium">Fetching latest news...</span>
           </div>
-        ) : filteredBlogs.length === 0 ? (
+        ) : gridBlogs.length === 0 ? (
           <div className="col-span-full py-10 text-center text-gray-500 text-sm">
             No articles found matching your criteria.
           </div>
-        ) : filteredBlogs.slice(0, visibleCount).map(blog => (
+        ) : gridBlogs.slice(0, visibleCount).map(blog => (
           <article 
             key={blog.id} 
             onClick={() => window.open(blog.url, '_blank')}

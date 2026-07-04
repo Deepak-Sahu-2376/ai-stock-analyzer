@@ -1,6 +1,5 @@
 const axios = require('axios');
 const { HttpsProxyAgent } = require('https-proxy-agent');
-const { logApiStatus } = require('./apiHealthService');
 
 // In-memory cookie jar
 let cookies = {};
@@ -91,7 +90,6 @@ const nseFetch = async (url, params = {}, retries = 2) => {
       httpsAgent,
       proxy: false
     });
-    logApiStatus('NSE Main API', url, true);
     return response.data;
   } catch (error) {
     const status = error.response ? error.response.status : null;
@@ -103,12 +101,10 @@ const nseFetch = async (url, params = {}, retries = 2) => {
         await initSession(true); // force refresh cookies
         return await nseFetch(url, params, retries - 1);
       } catch (retryError) {
-        logApiStatus('NSE Main API', url, false, retryError.message);
         console.error('Retry failed:', retryError.message);
         throw retryError;
       }
     }
-    logApiStatus('NSE Main API', url, false, error.message);
     throw error;
   }
 };
@@ -255,24 +251,8 @@ const nseService = {
 
   // 9.5 Get Equity Stock Indices (e.g. NIFTY 50, NIFTY 500)
   getEquityStockIndices: async (indexName = 'NIFTY 500') => {
-    try {
-      if (indexName === 'NIFTY 500') {
-        const url = 'https://archives.nseindia.com/content/indices/ind_nifty500list.csv';
-        const response = await axios.get(url, { timeout: 10000 });
-        const lines = response.data.split('\n').filter(line => line.trim().length > 0);
-        const data = lines.slice(1).map(line => {
-          const parts = line.split(',');
-          return { symbol: parts[2] ? parts[2].trim() : '' };
-        }).filter(item => item.symbol);
-        return { data };
-      }
-      
-      const url = 'https://www.nseindia.com/api/equity-stockIndices';
-      return await nseFetch(url, { index: indexName });
-    } catch (e) {
-      console.error(`Error fetching index list for ${indexName}:`, e.message);
-      return { data: [] };
-    }
+    const url = 'https://www.nseindia.com/api/equity-stockIndices';
+    return await nseFetch(url + '?index=' + encodeURIComponent(indexName));
   },
 
   // Heatmap Symbols
@@ -359,10 +339,8 @@ const nseService = {
         proxy: false
       });
 
-      logApiStatus('NSE Charting API', url, true);
       return response.data;
     } catch (error) {
-      logApiStatus('NSE Charting API', 'https://charting.nseindia.com/v1/charts/symbolHistoricalData', false, error.message);
       console.error(`Error fetching historical charting data for ${symbol}:`, error.message);
       throw error;
     }

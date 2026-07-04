@@ -1510,8 +1510,8 @@ export default function QuoteDetail({ symbol }) {
               <div className="p-4 flex flex-col gap-4">
                 {aiSummaries.map((summary, idx) => (
                   <div key={idx} className="border border-surface-variant rounded-lg p-4 bg-surface-variant/10">
-                    <div className="flex justify-between items-start mb-2">
-                      <div className="flex gap-2">
+                    <div className="flex flex-col sm:flex-row justify-between items-start gap-2 sm:gap-0 mb-3">
+                      <div className="flex flex-wrap gap-2">
                         {summary.ai_impact === 'Positive' && <span className="bg-green-500/10 text-green-500 text-xs font-bold px-2 py-1 rounded border border-green-500/20">Positive Impact</span>}
                         {summary.ai_impact === 'Negative' && <span className="bg-red-500/10 text-red-500 text-xs font-bold px-2 py-1 rounded border border-red-500/20">Negative Impact</span>}
                         {summary.ai_impact === 'Neutral' && <span className="bg-surface-variant/50 text-on-surface-variant text-xs font-bold px-2 py-1 rounded border border-on-surface-variant/20">Neutral Impact</span>}
@@ -1520,7 +1520,7 @@ export default function QuoteDetail({ symbol }) {
                         {summary.ai_sentiment === 'Bearish' && <span className="bg-red-500/10 text-red-500 text-xs font-bold px-2 py-1 rounded border border-red-500/20">Bearish</span>}
                         {summary.ai_sentiment === 'Neutral' && <span className="bg-surface-variant/50 text-on-surface-variant text-xs font-bold px-2 py-1 rounded border border-on-surface-variant/20">Neutral</span>}
                       </div>
-                      <div className="flex flex-col items-end text-xs font-medium">
+                      <div className="flex flex-col sm:items-end text-xs font-medium shrink-0">
                         <span className="text-on-surface-variant">Announced: {summary.anndate}</span>
                         {summary.created_at && (
                           <span className="text-[10px] text-on-surface-variant/70 mt-0.5">

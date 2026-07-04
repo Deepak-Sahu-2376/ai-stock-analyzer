@@ -310,16 +310,16 @@ export default function Markets({ onSelectStock }) {
             <p className="text-[11px] md:text-xs text-on-surface-variant">Track performance and find opportunities.</p>
           </div>
           
-          <div className="flex bg-surface-container-low p-1 rounded border border-border-subtle mt-4 sm:mt-0">
+          <div className="flex w-full sm:w-auto bg-surface-container-low p-1 rounded border border-border-subtle mt-4 sm:mt-0">
           <button 
             onClick={() => setViewMode('heatmaps')}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'heatmaps' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'heatmaps' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             Heatmaps
           </button>
           <button 
             onClick={() => setViewMode('announcements')}
-            className={`px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'announcements' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'announcements' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             Announcements
           </button>
@@ -330,7 +330,7 @@ export default function Markets({ onSelectStock }) {
       {viewMode === 'heatmaps' && (<>
       {/* Heatmaps Section */}
         <div className="bg-white border-b border-border-subtle mb-4">
-          <div className="flex flex-wrap border-b border-border-subtle px-4 sm:px-6 gap-6 text-xs md:text-sm">
+          <div className="flex overflow-x-auto hide-scrollbar border-b border-border-subtle px-4 sm:px-6 py-2 gap-4 md:gap-6 text-xs md:text-sm">
           {[
             { id: 'brdw', label: 'Broad Market Indices' },
             { id: 'sec', label: 'Sectoral Indices' },
@@ -340,7 +340,7 @@ export default function Markets({ onSelectStock }) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`pb-3 font-semibold transition-all ${
+              className={`pb-2 md:pb-3 whitespace-nowrap font-semibold transition-all ${
                 activeTab === tab.id 
                   ? 'text-tertiary border-b-2 border-tertiary -mb-[1px]' 
                   : 'text-on-surface-variant hover:text-on-surface'
@@ -363,7 +363,13 @@ export default function Markets({ onSelectStock }) {
                 </div>
               </div>
             ))
-          ) : Object.values(indicesData[activeTab] || {}).map((idx) => {
+          ) : Object.values(indicesData[activeTab] || {})
+            .sort((a, b) => {
+              const perChangeA = parseFloat(a.perChange) || parseFloat(a.percentChange) || parseFloat(a.pChange) || 0;
+              const perChangeB = parseFloat(b.perChange) || parseFloat(b.percentChange) || parseFloat(b.pChange) || 0;
+              return perChangeB - perChangeA;
+            })
+            .map((idx) => {
             const indexName = idx.brdCstIndexName || idx.indexName;
             const isSelected = selectedIdx === indexName;
             const perChange = parseFloat(idx.perChange) || 0;
@@ -428,7 +434,16 @@ export default function Markets({ onSelectStock }) {
                   </div>
                 </div>
               ))
-            ) : constituents.length > 0 ? constituents.map((stock) => {
+            ) : constituents.length > 0 ? (() => {
+              const selectedIdxData = indicesData[activeTab]?.[selectedIdx];
+              const idxPerChange = selectedIdxData ? (parseFloat(selectedIdxData.perChange) || parseFloat(selectedIdxData.percentChange) || parseFloat(selectedIdxData.pChange) || 0) : 0;
+              const isNegativeIdx = idxPerChange < 0;
+              
+              return [...constituents].sort((a, b) => {
+                const perChangeA = parseFloat(a.pChange) || 0;
+                const perChangeB = parseFloat(b.pChange) || 0;
+                return isNegativeIdx ? perChangeA - perChangeB : perChangeB - perChangeA;
+              }).map((stock) => {
             const perChange = parseFloat(stock.pChange) || 0;
             const currentPrice = parseFloat(stock.lastPrice) || 0;
             
@@ -465,7 +480,7 @@ export default function Markets({ onSelectStock }) {
                 </div>
               </div>
             );
-          }) : (
+          })})() : (
             <div className="col-span-full text-center text-sm text-on-surface-variant py-8">No constituents found for {selectedIdx}.</div>
           )}
         </div>

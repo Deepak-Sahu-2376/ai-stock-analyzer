@@ -23,8 +23,8 @@ export default {
         "inverse-on-surface": "#f9fafb",
         outline: "#9ca3af",
         "outline-variant": "#d1d5db",
-        border: "#e5e7eb",
-        "border-subtle": "#f3f4f6",
+        border: "#d1d5db",
+        "border-subtle": "#e5e7eb",
         primary: "#005cab", // Signature blue
         "on-primary": "#ffffff",
         "primary-container": "#ebf5ff",

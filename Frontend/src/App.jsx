@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
@@ -116,7 +116,7 @@ function App() {
   }, [currentTab, selectedSymbol]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-white text-on-surface pb-16 md:pb-0">
+    <div className="min-h-[100dvh] flex flex-col bg-white text-on-surface pb-16 md:pb-0">
       <Navbar 
         currentTab={currentTab} 
         setTab={setTab} 
@@ -153,7 +153,7 @@ function App() {
           </div>
         )}
       </div>
-      <Footer setTab={setTab} />
+      {currentTab !== 'home' && <Footer setTab={setTab} />}
       <BottomNav currentTab={currentTab} setTab={setTab} />
       <ScrollToTopButton />
     </div>

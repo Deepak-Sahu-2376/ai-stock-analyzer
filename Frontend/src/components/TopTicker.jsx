@@ -85,9 +85,11 @@ export default function TopTicker() {
     const percentChange = val - change !== 0 ? (change / (val - change)) * 100 : 0;
     
     return (
-      <div className="flex gap-1.5 items-baseline font-mono text-sm tracking-tight">
-        <span className={colorClass}>{val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-        <span className="text-on-surface-variant/70 text-xs">
+      <div className="flex gap-1 items-baseline font-mono tracking-tight whitespace-nowrap">
+        <span className={`${colorClass} text-[11px] sm:text-sm md:text-base`}>
+          {val.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </span>
+        <span className="text-on-surface-variant/70 text-[9px] sm:text-[10px] md:text-xs">
           {isPositive ? '+' : ''}{change.toFixed(2)} ({isPositive ? '+' : ''}{percentChange.toFixed(2)}%)
         </span>
       </div>

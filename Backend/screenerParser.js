@@ -1,6 +1,7 @@
 const { exec } = require('child_process');
 const path = require('path');
 const { pool } = require('./db');
+const { logApiStatus } = require('./apiHealthService');
 
 const parseNumber = (val) => {
   if (!val || val === 'N/A' || val === '%') return null;
@@ -15,6 +16,7 @@ const runScreenerAndSave = (symbol) => {
     const scriptPath = path.resolve(__dirname, '../Stock_Screener.sh');
     exec(`bash "${scriptPath}" "${symbol}"`, { cwd: path.resolve(__dirname, '../') }, async (error, stdout, stderr) => {
       if (error) {
+        logApiStatus('Screener Web Scraper', 'https://www.screener.in', false, stderr || error.message);
         console.error(`Screener error for ${symbol}: ${error}`);
         return reject({ error: 'Screener failed', details: stderr });
       }
@@ -140,6 +142,12 @@ const runScreenerAndSave = (symbol) => {
         // console.log(`Successfully updated database for ${dbData.symbol}`);
       } catch (dbErr) {
         console.error(`Failed to update database for ${dbData.symbol}:`, dbErr.message);
+      }
+
+      if (parsedData.length === 0) {
+        logApiStatus('Screener Web Scraper', 'https://www.screener.in', false, 'Empty output - likely layout changed');
+      } else {
+        logApiStatus('Screener Web Scraper', 'https://www.screener.in', true);
       }
 
       resolve({ output: stdout, parsedData });

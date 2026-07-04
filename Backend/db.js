@@ -229,6 +229,20 @@ const initializeDB = async () => {
       );
     `);
 
+    // Create api_health_status table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS api_health_status (
+        id SERIAL PRIMARY KEY,
+        api_name VARCHAR(100) UNIQUE NOT NULL,
+        endpoint TEXT NOT NULL,
+        status VARCHAR(10) DEFAULT 'UP',
+        last_success TIMESTAMP,
+        last_failure TIMESTAMP,
+        error_message TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('Database tables initialized successfully');
   } catch (error) {

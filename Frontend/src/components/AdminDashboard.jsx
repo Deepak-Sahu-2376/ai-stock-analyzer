@@ -33,6 +33,7 @@ export default function AdminDashboard({ setTab }) {
     topWishlisted: []
   });
   const [workerStatus, setWorkerStatus] = useState(null);
+  const [apiHealth, setApiHealth] = useState([]);
 
   const [broadcastData, setBroadcastData] = useState({ title: '', body: '' });
 
@@ -89,6 +90,9 @@ export default function AdminDashboard({ setTab }) {
         const workerData = await authFetch('/api/admin/system/status');
         setAnalytics(statData);
         setWorkerStatus(workerData);
+      } else if (tabName === 'api_health') {
+        const data = await authFetch('/api/admin/api-health');
+        setApiHealth(data);
       }
     } catch (err) {
       if (err.message.includes('Unauthorized')) {
@@ -188,6 +192,7 @@ export default function AdminDashboard({ setTab }) {
       { id: 'settings', label: 'App Settings', icon: 'settings' },
       { id: 'users', label: 'Users', icon: 'people' },
       { id: 'analytics', label: 'Analytics', icon: 'insights' },
+      { id: 'api_health', label: 'API Health', icon: 'monitor_heart' },
       { id: 'broadcast', label: 'Broadcast', icon: 'campaign' }
     ];
     return (
@@ -222,7 +227,7 @@ export default function AdminDashboard({ setTab }) {
 
           <div className="px-4 sm:px-6 py-4 border-b border-border-subtle flex justify-between items-center">
             <h2 className="font-bold text-xs uppercase tracking-wider text-on-surface-variant">
-              {activeAdminTab === 'ai' ? 'AI Configuration' : activeAdminTab === 'settings' ? 'Application Settings' : activeAdminTab}
+              {activeAdminTab === 'ai' ? 'AI Configuration' : activeAdminTab === 'settings' ? 'Application Settings' : activeAdminTab === 'api_health' ? 'API Health' : activeAdminTab}
             </h2>
             {success && (
               <span className="text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded flex items-center gap-1 animate-fade-in">
@@ -662,6 +667,73 @@ export default function AdminDashboard({ setTab }) {
                     </div>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* API HEALTH TAB */}
+            {activeAdminTab === 'api_health' && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="border-b border-gray-200 py-2 px-4 text-xs font-medium text-gray-500 uppercase">API Name</th>
+                      <th className="border-b border-gray-200 py-2 px-4 text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="border-b border-gray-200 py-2 px-4 text-xs font-medium text-gray-500 uppercase">Last Success</th>
+                      <th className="border-b border-gray-200 py-2 px-4 text-xs font-medium text-gray-500 uppercase">Last Failure</th>
+                      <th className="border-b border-gray-200 py-2 px-4 text-xs font-medium text-gray-500 uppercase">Error Details</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {apiHealth.length === 0 && (
+                      <tr>
+                        <td colSpan="5" className="py-8 text-center text-gray-500 text-sm italic">
+                          No API health data recorded yet.
+                        </td>
+                      </tr>
+                    )}
+                    {apiHealth.map((api, idx) => (
+                      <tr key={idx} className="hover:bg-gray-50">
+                        <td className="py-3 px-4 border-b border-gray-100">
+                          <div className="font-medium text-sm text-gray-800">{api.api_name}</div>
+                          <div className="text-[10px] text-gray-500 font-mono truncate max-w-[200px]" title={api.endpoint}>{api.endpoint}</div>
+                        </td>
+                        <td className="py-3 px-4 border-b border-gray-100">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium flex items-center gap-1 w-max ${api.status === 'UP' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {api.status === 'UP' && <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>}
+                            {api.status === 'DOWN' && <span className="w-1.5 h-1.5 rounded-full bg-red-500"></span>}
+                            {api.status}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 border-b border-gray-100 text-xs text-gray-600">
+                          {api.last_success ? new Date(api.last_success).toLocaleString() : 'Never'}
+                        </td>
+                        <td className="py-3 px-4 border-b border-gray-100 text-xs text-gray-600">
+                          {api.last_failure ? new Date(api.last_failure).toLocaleString() : 'Never'}
+                        </td>
+                        <td className="py-3 px-4 border-b border-gray-100 text-xs text-red-500 max-w-xs group">
+                          {api.error_message ? (
+                            <div className="flex items-center gap-1">
+                              <span className="truncate flex-1" title={api.error_message}>{api.error_message}</span>
+                              <button 
+                                onClick={() => {
+                                  const textToCopy = `API: ${api.api_name}\nEndpoint: ${api.endpoint}\nError: ${api.error_message}`;
+                                  navigator.clipboard.writeText(textToCopy);
+                                  showSuccess('API error details copied to clipboard');
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-red-50 text-red-400 hover:text-red-700 transition-all flex-shrink-0"
+                                title="Copy Error"
+                              >
+                                <span className="material-symbols-rounded text-[14px]">content_copy</span>
+                              </button>
+                            </div>
+                          ) : (
+                            '-'
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
 

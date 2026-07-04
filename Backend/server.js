@@ -46,6 +46,26 @@ app.use(cors({
 }));
 app.use(express.json());
 
+const { logApiStatus } = require('./apiHealthService');
+// Seed initial status
+logApiStatus('Internal Backend API', 'Stock Island Server', true);
+
+let internalApiStatus = 'UP';
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    if (req.path.startsWith('/api/') && !req.path.startsWith('/api/admin/api-health')) {
+      if (res.statusCode >= 500) {
+        internalApiStatus = 'DOWN';
+        logApiStatus('Internal Backend API', 'Stock Island Server', false, `Failed with status ${res.statusCode} on ${req.method} ${req.path}`);
+      } else if (res.statusCode < 500 && internalApiStatus === 'DOWN') {
+        internalApiStatus = 'UP';
+        logApiStatus('Internal Backend API', 'Stock Island Server', true);
+      }
+    }
+  });
+  next();
+});
+
 // JWT Verification Middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -244,6 +264,16 @@ app.get('/api/admin/analytics', authenticateToken, requireAdmin, async (req, res
 
 app.get('/api/admin/system/status', authenticateToken, requireAdmin, (req, res) => {
   res.json(global.workerStatus);
+});
+
+app.get('/api/admin/api-health', authenticateToken, requireAdmin, async (req, res) => {
+  const { getApiHealthStatus } = require('./apiHealthService');
+  try {
+    const data = await getApiHealthStatus();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: 'Server error fetching API health' });
+  }
 });
 
 app.get('/api/admin/app-settings', authenticateToken, requireAdmin, async (req, res) => {
