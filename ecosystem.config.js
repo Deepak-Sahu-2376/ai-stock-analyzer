@@ -12,7 +12,7 @@ module.exports = {
     },
     {
       name: "si-ai-service",
-      script: "cd AIService && source venv/bin/activate && uvicorn main:app --port 8005",
+      script: "./start_ai.sh",
       interpreter: "bash"
     }
   ],

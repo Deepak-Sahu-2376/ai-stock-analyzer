@@ -26,7 +26,9 @@ const getHeaders = () => {
     'Accept-Language': 'en-IN,en-GB;q=0.9,en-US;q=0.8,en;q=0.7',
     'Cache-Control': 'no-cache',
     'Pragma': 'no-cache',
+    'Accept-Encoding': 'gzip, deflate, br',
     'Referer': 'https://www.nseindia.com/',
+    'Origin': 'https://www.nseindia.com',
     'Cookie': cookieStr
   };
 };
@@ -245,6 +247,12 @@ const nseService = {
   getGiftNifty: async () => {
     const url = 'https://www.nseindia.com/api/NextApi/apiClient';
     return await nseFetch(url, { functionName: 'getGiftNifty' });
+  },
+
+  // 9.5 Get Equity Stock Indices (e.g. NIFTY 50, NIFTY 500)
+  getEquityStockIndices: async (indexName = 'NIFTY 500') => {
+    const url = 'https://www.nseindia.com/api/equity-stockIndices';
+    return await nseFetch(url, { index: indexName });
   },
 
   // Heatmap Symbols

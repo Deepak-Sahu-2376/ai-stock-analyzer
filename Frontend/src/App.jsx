@@ -11,6 +11,7 @@ import ForgotPassword from './components/ForgotPassword';
 import Dashboard from './components/Dashboard';
 import AdminDashboard from './components/AdminDashboard';
 import Blogs from './components/Blogs';
+import GoldenScreener from './components/GoldenScreener';
 import { api } from './api';
 
 import TopTicker from './components/TopTicker';
@@ -29,6 +30,7 @@ function App() {
     if (path.startsWith('/quote')) return 'quote';
     if (path.startsWith('/dashboard')) return 'dashboard';
     if (path.startsWith('/admin')) return 'admin';
+    if (path.startsWith('/screener')) return 'screener';
     return 'home';
   };
 
@@ -136,6 +138,9 @@ function App() {
         </div>
         <div className={currentTab === 'dashboard' ? 'flex-1 flex flex-col' : 'hidden'}>
           {currentTab === 'dashboard' && <Dashboard setTab={setTab} onSelectStock={handleSelectStock} />}
+        </div>
+        <div className={currentTab === 'screener' ? 'flex-1 flex flex-col' : 'hidden'}>
+          {currentTab === 'screener' && <GoldenScreener onSelectStock={handleSelectStock} />}
         </div>
         <div className={currentTab === 'admin' ? 'flex-1 flex flex-col' : 'hidden'}>
           {currentTab === 'admin' && <AdminDashboard setTab={setTab} />}

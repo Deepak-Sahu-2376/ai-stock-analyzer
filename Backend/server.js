@@ -898,6 +898,40 @@ app.get('/api/stocks/peers/:symbol', async (req, res) => {
   }
 });
 
+// Golden Screener API Endpoint
+app.get('/api/screener/golden-stocks', async (req, res) => {
+  try {
+    const query = `
+      SELECT symbol, sales_growth_ttm, profit_growth_ttm, roe_1y, cagr_1y
+      FROM stock_financials 
+      WHERE 
+        sales_growth_10y > 0 AND sales_growth_5y > 0 AND sales_growth_3y > 0 AND sales_growth_ttm > 0
+        AND profit_growth_10y > 0 AND profit_growth_5y > 0 AND profit_growth_3y > 0 AND profit_growth_ttm > 0
+        AND roe_10y > 0 AND roe_5y > 0 AND roe_3y > 0 AND roe_1y > 0
+        AND cagr_1y < 0
+      ORDER BY cagr_1y ASC
+    `;
+    const result = await pool.query(query);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching golden stocks:', error);
+    res.status(500).json({ error: 'Failed to fetch golden stocks' });
+  }
+});
+
+// Screener Script execution Endpoint
+app.get('/api/screener/:symbol', async (req, res) => {
+  const symbol = req.params.symbol.toUpperCase();
+  const { runScreenerAndSave } = require('./screenerParser');
+  
+  try {
+    const data = await runScreenerAndSave(symbol);
+    res.json(data);
+  } catch (error) {
+    res.status(500).json(error);
+  }
+});
+
 // Stock 1D Chart proxy
 app.get('/api/stocks/chart/:symbol', async (req, res) => {
   const symbol = req.params.symbol.toUpperCase();
@@ -1142,9 +1176,153 @@ app.get('/api/announcements/summary/:symbol', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Failed to fetch AI summaries:', error);
-    res.status(500).json({ error: 'Failed to fetch AI summaries' });
+res.status(500).json({ error: 'Failed to fetch AI summaries' });
   }
 });
+
+// Background Worker for Alerts
+function startBlogsWorker() {
+  const runWorker = async () => {
+    global.workerStatus.blogs.status = 'running';
+    global.workerStatus.blogs.lastRun = new Date().toISOString();
+    try {
+      const settings = appSettingsCache;
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const countRes = await pool.query('SELECT COUNT(*) FROM blogs WHERE DATE(created_at) = CURRENT_DATE');
+      const fetchCount = parseInt(countRes.rows[0].count);
+
+      if (fetchCount < (settings.blog_fetches_per_day || 2)) {
+        await fetchAndSaveFinancialBlogs(settings.blog_search_topic || 'india stock market, nse, bse');
+      }
+    } catch (err) {
+      console.error('Blog worker error:', err);
+    } finally {
+      global.workerStatus.blogs.status = 'idle';
+      setTimeout(runWorker, 1800000); 
+    }
+  };
+  runWorker();
+}
+
+function startScreenerWorker() {
+  const seedSymbols = [
+    'RELIANCE', 'TCS', 'HDFCBANK', 'ICICIBANK', 'INFY', 'ITC', 'SBIN', 'BHARTIARTL',
+    'BAJFINANCE', 'LARSEN', 'KOTAKBANK', 'HCLTECH', 'ASIANPAINT', 'AXISBANK', 'MARUTI',
+    'SUNPHARMA', 'TITAN', 'ULTRACEMCO', 'BAJAJFINSV', 'WIPRO', 'ONGC', 'NTPC',
+    'POWERGRID', 'M&M', 'TVSMOTOR', 'HEROMOTOCO', 'TATASTEEL', 'HINDUNILVR'
+  ];
+
+  const runWorker = async () => {
+    try {
+      // Collect unique symbols from user data
+      const resWish = await pool.query('SELECT DISTINCT symbol FROM wishlists');
+      const resHold = await pool.query('SELECT DISTINCT symbol FROM holdings');
+      const resAlert = await pool.query('SELECT DISTINCT symbol FROM alerts');
+      
+      const allSymbols = new Set(seedSymbols);
+      resWish.rows.forEach(r => allSymbols.add(r.symbol));
+      resHold.rows.forEach(r => allSymbols.add(r.symbol));
+      resAlert.rows.forEach(r => allSymbols.add(r.symbol));
+      
+      const symbolsArray = Array.from(allSymbols);
+
+      // Insert missing symbols into stock_financials to track them
+      for (const sym of symbolsArray) {
+        await pool.query('INSERT INTO stock_financials (symbol) VALUES ($1) ON CONFLICT (symbol) DO NOTHING', [sym]);
+      }
+
+      // Pick the oldest updated symbol
+      const res = await pool.query('SELECT symbol FROM stock_financials ORDER BY last_updated ASC NULLS FIRST LIMIT 1');
+      if (res.rows.length > 0) {
+        const symbol = res.rows[0].symbol;
+        
+        // Execute bash script
+        const { exec } = require('child_process');
+        exec(`bash ../Stock_Screener.sh ${symbol}`, { cwd: __dirname }, async (error, stdout) => {
+          if (!error && stdout) {
+            // Parse stdout
+            const lines = stdout.split('\n');
+            const dataMap = {};
+            let currentSection = null;
+
+            for (let line of lines) {
+              line = line.trim();
+              if (line.startsWith('>>>') && line.endsWith('<<<')) {
+                currentSection = line.replace('>>>', '').replace('<<<', '').trim();
+              } else if (line.includes('|') && currentSection) {
+                const parts = line.split('|');
+                if (parts.length === 2) {
+                  const label = parts[0].trim().replace(/:$/, '');
+                  const value = parts[1].trim();
+                  if (value && value !== 'N/A' && value !== '%') {
+                    const numVal = parseFloat(value.replace('%', '').replace(',', ''));
+                    if (!isNaN(numVal)) {
+                      dataMap[`${currentSection}_${label}`] = numVal;
+                    }
+                  }
+                }
+              }
+            }
+
+            const getVal = (sectionPrefix, label) => {
+               for (const key of Object.keys(dataMap)) {
+                  if (key.includes(sectionPrefix) && key.includes(label)) return dataMap[key];
+               }
+               return null;
+            };
+
+            const sg10 = getVal('Sales', '10 Years');
+            const sg5 = getVal('Sales', '5 Years');
+            const sg3 = getVal('Sales', '3 Years');
+            const sgttm = getVal('Sales', 'TTM');
+            
+            const pg10 = getVal('Profit', '10 Years');
+            const pg5 = getVal('Profit', '5 Years');
+            const pg3 = getVal('Profit', '3 Years');
+            const pgttm = getVal('Profit', 'TTM');
+            
+            const roe10 = getVal('Equity', '10 Years');
+            const roe5 = getVal('Equity', '5 Years');
+            const roe3 = getVal('Equity', '3 Years');
+            const roe1 = getVal('Equity', 'Last Year');
+            
+            const cagr10 = getVal('Price', '10 Years');
+            const cagr5 = getVal('Price', '5 Years');
+            const cagr3 = getVal('Price', '3 Years');
+            const cagr1 = getVal('Price', '1 Year');
+
+            await pool.query(`
+              UPDATE stock_financials SET
+                sales_growth_10y = $1, sales_growth_5y = $2, sales_growth_3y = $3, sales_growth_ttm = $4,
+                profit_growth_10y = $5, profit_growth_5y = $6, profit_growth_3y = $7, profit_growth_ttm = $8,
+                roe_10y = $9, roe_5y = $10, roe_3y = $11, roe_1y = $12,
+                cagr_10y = $13, cagr_5y = $14, cagr_3y = $15, cagr_1y = $16,
+                last_updated = CURRENT_TIMESTAMP
+              WHERE symbol = $17
+            `, [
+              sg10, sg5, sg3, sgttm,
+              pg10, pg5, pg3, pgttm,
+              roe10, roe5, roe3, roe1,
+              cagr10, cagr5, cagr3, cagr1,
+              symbol
+            ]);
+          } else {
+             // Mark updated even if failed to avoid infinite loop on bad symbol
+             await pool.query('UPDATE stock_financials SET last_updated = CURRENT_TIMESTAMP WHERE symbol = $1', [symbol]);
+          }
+        });
+      }
+    } catch (e) {
+      console.error('Screener worker error:', e);
+    } finally {
+      // 20 second delay to avoid getting blocked
+      setTimeout(runWorker, 20000); 
+    }
+  };
+  runWorker();
+}
 
 // Background Worker for Alerts
 function startAlertsWorker() {
@@ -1612,9 +1790,14 @@ initializeDB()
     startAnnouncementsWorker();
     startCorporateActionsWorker();
     startBlogsWorker();
+    startScreenerWorker();
     const server = app.listen(PORT, () => {
       console.log(`Backend server running on http://localhost:${PORT}`);
     });
+
+    // Start Golden Stocks background worker
+    const { startWorker } = require('./screenerWorker');
+    startWorker();
 
     // --- WEBSOCKET SERVER ---
     const wss = new WebSocketServer({ server });

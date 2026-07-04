@@ -161,6 +161,18 @@ export const api = {
     return res.json();
   },
 
+  getScreenerData: async (symbol) => {
+    const res = await fetch(`${API_BASE_URL}/screener/${encodeURIComponent(symbol)}`);
+    if (!res.ok) throw new Error('Failed to fetch screener data');
+    return res.json();
+  },
+
+  getGoldenStocks: async () => {
+    const res = await fetch(`${API_BASE_URL}/screener/golden-stocks`);
+    if (!res.ok) throw new Error('Failed to fetch golden stocks');
+    return res.json();
+  },
+
   // --- Real-time Indices Data ---
   getIndices: async (type) => {
     const res = await fetch(`${API_BASE_URL}/stocks/indices?type=${encodeURIComponent(type)}`);

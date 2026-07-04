@@ -135,6 +135,17 @@ export default function Navbar({ currentTab, setTab, onSearchStock }) {
         >
           Blogs
         </button>
+        <button
+          onClick={() => setTab('screener')}
+          className={`font-medium py-5 text-xs uppercase tracking-wider transition-all hover:text-[#FFB300] ${
+            currentTab === 'screener' 
+              ? 'text-[#FFB300] border-b-2 border-[#FFB300] font-bold' 
+              : 'text-on-surface-variant'
+          } flex items-center gap-1`}
+        >
+          <span className="material-icons text-[14px]">emoji_events</span>
+          Golden Stocks
+        </button>
         {user && (
           <button
             onClick={() => setTab('dashboard')}

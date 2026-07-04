@@ -14,3 +14,22 @@ test-proxy.js
 *.sh
 server_deployment_journal.md
 Frontend/README.md
+SETUP_INSTRUCTIONS.md
+setupollama.md
+tunnel_setup.tar.gz
+tunnel_setup/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Tests and Lock files
+package-lock.json
+*test*
+.log

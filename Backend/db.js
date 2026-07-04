@@ -205,6 +205,30 @@ const initializeDB = async () => {
       );
     `);
 
+    // Create stock_financials table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS stock_financials (
+        symbol VARCHAR(50) PRIMARY KEY,
+        sales_growth_10y NUMERIC,
+        sales_growth_5y NUMERIC,
+        sales_growth_3y NUMERIC,
+        sales_growth_ttm NUMERIC,
+        profit_growth_10y NUMERIC,
+        profit_growth_5y NUMERIC,
+        profit_growth_3y NUMERIC,
+        profit_growth_ttm NUMERIC,
+        roe_10y NUMERIC,
+        roe_5y NUMERIC,
+        roe_3y NUMERIC,
+        roe_1y NUMERIC,
+        cagr_10y NUMERIC,
+        cagr_5y NUMERIC,
+        cagr_3y NUMERIC,
+        cagr_1y NUMERIC,
+        last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
     await client.query('COMMIT');
     console.log('Database tables initialized successfully');
   } catch (error) {

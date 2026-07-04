@@ -501,6 +501,8 @@ export default function QuoteDetail({ symbol }) {
   const [tradeMessage, setTradeMessage] = useState('');
   const [tradeError, setTradeError] = useState('');
   const [tradeLoading, setTradeLoading] = useState(false);
+  const [screenerData, setScreenerData] = useState([]);
+  const [screenerLoading, setScreenerLoading] = useState(false);
   const [aiSummaries, setAiSummaries] = useState([]);
   const [aiSummariesLoading, setAiSummariesLoading] = useState(false);
 
@@ -752,6 +754,24 @@ export default function QuoteDetail({ symbol }) {
       }
     }
     fetchAiSummaries();
+  }, [symbol]);
+
+  useEffect(() => {
+    let active = true;
+    async function fetchScreener() {
+      setScreenerLoading(true);
+      try {
+        const data = await api.getScreenerData(symbol);
+        if (active) setScreenerData(data.parsedData || []);
+      } catch (err) {
+        console.error('Error fetching screener data:', err);
+        if (active) setScreenerData([]);
+      } finally {
+        if (active) setScreenerLoading(false);
+      }
+    }
+    fetchScreener();
+    return () => { active = false; };
   }, [symbol]);
 
   useEffect(() => {
@@ -1447,9 +1467,42 @@ export default function QuoteDetail({ symbol }) {
             </div>
           </section>
 
+          {/* Screener Analysis */}
+          <section className="mb-6 bg-surface border border-surface-variant rounded-xl overflow-hidden shadow-sm mx-4 sm:mx-6">
+            <div className="p-4 bg-surface-variant/30 border-b border-surface-variant flex items-center gap-2">
+              <span className="material-icons text-secondary text-xl">analytics</span>
+              <h3 className="font-bold text-on-surface">Screener Analysis</h3>
+            </div>
+            <div className="p-4 w-full">
+              {screenerLoading ? (
+                <div className="text-sm text-on-surface-variant animate-pulse">Loading screener data...</div>
+              ) : screenerData.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {screenerData.map((section, idx) => (
+                    <div key={idx} className="border border-border-subtle rounded-md bg-white p-3">
+                      <h4 className="font-semibold text-sm text-[#414751] mb-2">{section.title}</h4>
+                      <table className="w-full text-xs text-left">
+                        <tbody className="divide-y divide-transparent">
+                          {section.data.map((item, i) => (
+                            <tr key={i} className="group">
+                              <td className="py-1 text-on-surface-variant w-1/2">{item.label}</td>
+                              <td className="py-1 text-on-surface font-bold text-right">{item.value}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-on-surface-variant">No screener data available.</div>
+              )}
+            </div>
+          </section>
+
           {/* AI Summaries View */}
           {aiSummaries.length > 0 && (
-            <section className="mb-6 bg-surface border border-surface-variant rounded-xl overflow-hidden shadow-sm">
+            <section className="mb-6 bg-surface border border-surface-variant rounded-xl overflow-hidden shadow-sm mx-4 sm:mx-6">
               <div className="p-4 bg-surface-variant/30 border-b border-surface-variant flex items-center gap-2">
                 <span className="material-icons text-primary text-xl">auto_awesome</span>
                 <h3 className="font-bold text-on-surface">Recent AI Summaries</h3>

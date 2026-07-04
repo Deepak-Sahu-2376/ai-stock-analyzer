@@ -191,6 +191,27 @@ export default function Home({ setTab, onSelectStock }) {
             NIFTY50
           </button>
         </div>
+
+        {/* Golden Stocks Promo Card */}
+        <div className="mt-8 flex justify-center">
+          <button
+            onClick={() => setTab('screener')}
+            className="group relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 to-orange-400 p-[1px] transition-all hover:scale-[1.02] hover:shadow-lg active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-4 rounded-xl bg-white/95 px-6 py-4 backdrop-blur-sm transition-all group-hover:bg-white/90">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                <span className="material-symbols-outlined text-[24px]">stars</span>
+              </div>
+              <div className="text-left">
+                <h3 className="font-bold text-on-surface">Golden Stocks Screener</h3>
+                <p className="text-xs text-on-surface-variant">Discover fundamentally strong companies instantly</p>
+              </div>
+              <div className="ml-2 flex items-center justify-center text-amber-500">
+                <span className="material-symbols-outlined transition-transform group-hover:translate-x-1">arrow_forward</span>
+              </div>
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
