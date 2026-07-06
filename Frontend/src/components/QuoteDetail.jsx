@@ -473,6 +473,7 @@ export default function QuoteDetail({ symbol }) {
   const [orderBook, setOrderBook] = useState([]);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeSubTab, setActiveSubTab] = useState('dashboard');
+  const [shareCopied, setShareCopied] = useState(false);
   const [tickActive, setTickActive] = useState('none');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -505,6 +506,10 @@ export default function QuoteDetail({ symbol }) {
   const [screenerLoading, setScreenerLoading] = useState(false);
   const [aiSummaries, setAiSummaries] = useState([]);
   const [aiSummariesLoading, setAiSummariesLoading] = useState(false);
+  const [orderSummary, setOrderSummary] = useState(null);
+  const [orderSummaryLoading, setOrderSummaryLoading] = useState(false);
+  const [orderAnnouncements, setOrderAnnouncements] = useState([]);
+  const [orderAnnouncementsLoading, setOrderAnnouncementsLoading] = useState(false);
 
   const handleToggleWishlist = async () => {
     if (!localStorage.getItem('token')) {
@@ -517,6 +522,14 @@ export default function QuoteDetail({ symbol }) {
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleShare = () => {
+    const url = `${window.location.origin}/quote/${encodeURIComponent(symbol)}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    }).catch(err => console.error('Failed to copy: ', err));
   };
 
   const fetchUserData = async () => {
@@ -534,6 +547,10 @@ export default function QuoteDetail({ symbol }) {
       console.warn('Failed to load user portfolio data:', err.message);
     }
   };
+
+  useEffect(() => {
+    setActiveSubTab('dashboard');
+  }, [symbol]);
 
   useEffect(() => {
     let active = true;
@@ -757,6 +774,39 @@ export default function QuoteDetail({ symbol }) {
   }, [symbol]);
 
   useEffect(() => {
+    async function fetchOrderSummary() {
+      setOrderSummaryLoading(true);
+      try {
+        const result = await api.getOrderSummary(symbol);
+        setOrderSummary(result);
+      } catch (err) {
+        console.error('Error fetching order summary:', err);
+        setOrderSummary(null);
+      } finally {
+        setOrderSummaryLoading(false);
+      }
+    }
+    fetchOrderSummary();
+  }, [symbol]);
+
+  useEffect(() => {
+    async function fetchOrderAnnouncements() {
+      setOrderAnnouncementsLoading(true);
+      try {
+        const result = await api.getAnnouncements('equities', { symbol, subject: 'Awarding of order(s)/contract(s)' });
+        setOrderAnnouncements(Array.isArray(result) ? result : []);
+      } catch (err) {
+        console.error('Error fetching order announcements:', err);
+        setOrderAnnouncements([]);
+      } finally {
+        setOrderAnnouncementsLoading(false);
+      }
+    }
+    fetchOrderAnnouncements();
+  }, [symbol]);
+
+
+  useEffect(() => {
     let active = true;
     async function fetchScreener() {
       setScreenerLoading(true);
@@ -957,6 +1007,12 @@ export default function QuoteDetail({ symbol }) {
             >
               {inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
             </button>
+            <button
+              onClick={handleShare}
+              className="inline-flex items-center justify-center px-3 py-1 border border-primary text-primary hover:bg-primary hover:text-white transition-all rounded-sm text-[11px] font-bold uppercase tracking-wider"
+            >
+              {shareCopied ? 'COPIED!' : 'SHARE'}
+            </button>
           </div>
         </div>
 
@@ -1023,6 +1079,13 @@ export default function QuoteDetail({ symbol }) {
             }`}
         >
           Announcements
+        </button>
+        <button
+          onClick={() => setActiveSubTab('orders')}
+          className={`py-3 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeSubTab === 'orders' ? 'text-primary border-b-2 border-primary -mb-[2px]' : 'text-on-surface-variant hover:text-on-surface'
+            }`}
+        >
+          Order Awards
         </button>
         <button
           onClick={() => setActiveSubTab('actions')}
@@ -1167,7 +1230,7 @@ export default function QuoteDetail({ symbol }) {
 
               {/* Responsive Container */}
               <div className="flex-1 w-full bg-surface-bright rounded border border-border-subtle relative p-2 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <defs>
                       <linearGradient id="chartGrad" x1="0%" x2="0%" y1="0%" y2="100%">
@@ -1573,7 +1636,66 @@ export default function QuoteDetail({ symbol }) {
             ))
           ) : (
             <div className="p-4 text-center text-on-surface-variant italic border border-border-subtle rounded bg-surface-container-low/50">
-              No recent announcements found.
+              No recent NSE announcements found.
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Orders View */}
+      {activeSubTab === 'orders' && (
+        <section className="bg-white border-b-[8px] border-[#f1f1f1] p-4 sm:p-6 space-y-0">
+          <h3 className="font-bold text-base text-on-surface mb-2">Order Awards</h3>
+          
+          {orderSummaryLoading ? (
+            <div className="mb-4 p-3 bg-[#e8f0fe] rounded border border-[#aecbfa] text-xs text-[#1967d2] flex items-center gap-2">
+              <span className="material-icons animate-spin text-sm">autorenew</span> Generating AI Summary...
+            </div>
+          ) : orderSummary && !orderSummary.error && (
+            <div className="mb-4 p-3 bg-surface-container-low rounded border border-border-subtle shadow-sm relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-1.5 bg-gradient-to-r from-transparent to-primary/10 rounded-bl flex items-center gap-1 opacity-80">
+                 <span className="material-icons text-[10px] text-primary">auto_awesome</span>
+                 <span className="text-[9px] font-bold text-primary uppercase tracking-wider">AI Summary</span>
+              </div>
+              <p className="text-xs text-on-surface pr-16 leading-relaxed">
+                {orderSummary.ai_summary}
+              </p>
+              <div className="mt-2 pt-2 border-t border-border-subtle flex justify-between items-center">
+                 <div className="text-[10px] font-mono text-on-surface-variant">Extracted Order Value</div>
+                 <div className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded border border-green-100">
+                    {orderSummary.order_value_cr > 0 ? `₹ ${orderSummary.order_value_cr.toLocaleString('en-IN')} Cr.` : 'Value Not Disclosed'}
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {orderAnnouncementsLoading ? (
+            <div className="p-4 text-center text-on-surface-variant text-xs">Loading order announcements...</div>
+          ) : orderAnnouncements && orderAnnouncements.length > 0 ? (
+            orderAnnouncements.map((ann, i) => (
+              <div key={i} className="border-b border-border-subtle py-4 hover:bg-surface-container-low transition-colors flex justify-between items-start gap-4">
+                <div>
+                  <span className="text-[10px] font-mono bg-surface-container-low text-on-surface-variant px-2 py-0.5 rounded border border-border-subtle">
+                    {ann.an_dt ? ann.an_dt : '-'}
+                  </span>
+                  <h4 className="font-bold text-xs text-on-surface mt-2">{ann.desc}</h4>
+                  <p className="text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+                    {ann.attchmntText || 'Company update regarding award or receipt of order.'}
+                  </p>
+                </div>
+                {ann.attchmntFile && (
+                  <button
+                    onClick={() => window.open(ann.attchmntFile, '_blank')}
+                    className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white text-[11px] font-bold uppercase rounded-sm"
+                  >
+                    <span className="material-icons text-sm">picture_as_pdf</span> View PDF
+                  </button>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="p-4 text-center text-on-surface-variant italic border border-border-subtle rounded bg-surface-container-low/50">
+              No recent order awards found.
             </div>
           )}
         </section>

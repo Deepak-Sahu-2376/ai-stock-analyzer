@@ -284,6 +284,8 @@ export const api = {
     return res.json();
   },
 
+
+
   // Push Notifications
   getVapidPublicKey: async () => {
     const res = await fetch(`${API_BASE_URL}/push/vapidPublicKey`);
@@ -375,6 +377,17 @@ export const api = {
       const data = await res.json();
       throw new Error(data.error || 'Failed to send test push notification');
     }
+    return res.json();
+  },
+  getOrderSummary: async (symbol) => {
+    const res = await fetch(`${API_BASE_URL}/announcements/order-summary/${encodeURIComponent(symbol)}`);
+    if (!res.ok) throw new Error('Failed to fetch order summary');
+    return res.json();
+  },
+
+  getAllOrderAnnouncements: async () => {
+    const res = await fetch(`${API_BASE_URL}/announcements/orders/all`);
+    if (!res.ok) throw new Error('Failed to fetch order announcements');
     return res.json();
   }
 };

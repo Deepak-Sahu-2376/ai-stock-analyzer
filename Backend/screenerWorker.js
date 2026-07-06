@@ -65,10 +65,32 @@ const processNextStock = async () => {
     const symbolToProcess = result.rows[0].symbol;
     console.log(`[Worker] Processing ${symbolToProcess}...`);
 
+    // Fetch market cap directly from Screener.in
+    let marketCapCr = null;
+    try {
+      const axios = require('axios');
+      const response = await axios.get(`https://www.screener.in/company/${symbolToProcess}/`, {
+        headers: {
+          'user-agent': 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36'
+        }
+      });
+      const html = response.data;
+      const match = html.match(/Market Cap[\s\S]{0,100}?<span class="number">([^<]+)<\/span>/);
+      if (match && match[1]) {
+        marketCapCr = parseFloat(match[1].replace(/,/g, ''));
+        if (!isNaN(marketCapCr)) {
+          await pool.query(
+            `UPDATE stock_financials SET market_cap = $1 WHERE symbol = $2`,
+            [marketCapCr, symbolToProcess]
+          );
+        }
+      }
+    } catch (err) {
+      console.error(`[Worker] Failed to fetch market cap for ${symbolToProcess} from Screener:`, err.message);
+    }
+
     // Run screener parsing and DB upsert logic
     await runScreenerAndSave(symbolToProcess);
-    
-    // console.log(`[Worker] Successfully updated ${symbolToProcess}`);
   } catch (error) {
     console.error(`[Worker] Error in processNextStock loop:`, error.message);
   } finally {

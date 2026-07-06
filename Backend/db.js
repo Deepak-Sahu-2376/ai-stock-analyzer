@@ -229,6 +229,29 @@ const initializeDB = async () => {
       );
     `);
 
+    // Add market_cap to stock_financials
+    await client.query(`
+      ALTER TABLE stock_financials
+      ADD COLUMN IF NOT EXISTS market_cap NUMERIC;
+    `);
+
+    // Create processed_order_announcements table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS processed_order_announcements (
+        news_id VARCHAR(255) PRIMARY KEY,
+        symbol VARCHAR(50) NOT NULL,
+        ai_summary TEXT,
+        order_value_cr NUMERIC,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Add anndate to processed_order_announcements
+    await client.query(`
+      ALTER TABLE processed_order_announcements
+      ADD COLUMN IF NOT EXISTS anndate TEXT;
+    `);
+
     // Create api_health_status table
     await client.query(`
       CREATE TABLE IF NOT EXISTS api_health_status (

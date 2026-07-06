@@ -122,6 +122,9 @@ const GoldenScreener = ({ onSelectStock }) => {
                     <th onClick={() => handleSort('cagr_1y')} className="py-3 px-4 font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-on-surface transition-colors">
                       <div className="flex items-center justify-end">1Y CAGR <SortIcon columnKey="cagr_1y" /></div>
                     </th>
+                    <th onClick={() => handleSort('order_to_mcap_percent')} className="py-3 px-4 font-semibold text-on-surface-variant uppercase tracking-wider whitespace-nowrap cursor-pointer hover:text-on-surface transition-colors">
+                      <div className="flex items-center justify-end">Order/MCap % <SortIcon columnKey="order_to_mcap_percent" /></div>
+                    </th>
                   </tr>
                 </thead>
               <tbody className="divide-y divide-border-subtle">
@@ -145,6 +148,13 @@ const GoldenScreener = ({ onSelectStock }) => {
                     </td>
                     <td className="py-3 px-4 text-on-surface font-mono font-medium text-right">
                       <span className="text-[#d32f2f]">{stock.cagr_1y}%</span>
+                    </td>
+                    <td className="py-3 px-4 text-on-surface font-mono font-medium text-right">
+                      {stock.order_to_mcap_percent != null ? (
+                        <span className="text-[#2e7d32] bg-green-50 px-2 py-0.5 rounded border border-green-100">{stock.order_to_mcap_percent}%</span>
+                      ) : (
+                        <span className="text-on-surface-variant/50">-</span>
+                      )}
                     </td>
                   </tr>
                 ))}

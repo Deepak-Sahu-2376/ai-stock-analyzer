@@ -114,3 +114,59 @@ Announcement Text:
             continue
             
     raise HTTPException(status_code=500, detail=f"LLM processing failed on all configured endpoints. Last error: {str(last_error)}")
+
+@app.post("/api/ai/summarize-order")
+def summarize_order(req: SummarizeRequest):
+    pdf_text = extract_text_from_pdf(req.pdf_url)
+    
+    if not pdf_text.strip():
+        return {
+            "summary": "This announcement is a scanned image document. The local AI cannot extract text from scanned images without OCR.",
+            "order_value_cr": 0
+        }
+    
+    truncated_text = pdf_text[:10000] 
+
+    urls = [u.strip() for u in req.ollama_url.split(',') if u.strip()]
+    if not urls:
+        raise HTTPException(status_code=400, detail="No Ollama URLs provided.")
+
+    prompt = PromptTemplate(
+        input_variables=["text"],
+        template="""Analyze this stock exchange order award announcement.
+Provide a concise 2-sentence summary. Most importantly, extract the total order value in Crores (INR). If the value is in Millions, divide by 10. If in Lakhs, divide by 100. If no exact value is found, output 0.
+Respond strictly in valid JSON format with keys "summary" and "order_value_cr". Do not include any other text, markdown blocks or explanation.
+
+Announcement Text:
+{text}
+"""
+    )
+    formatted_prompt = prompt.format(text=truncated_text)
+
+    last_error = None
+    for url in urls:
+        try:
+            llm = OllamaLLM(
+                base_url=url,
+                model=req.model_name,
+                temperature=0.1
+            )
+            
+            result = llm.invoke(formatted_prompt)
+            
+            result_text = result.strip()
+            if result_text.startswith("```json"):
+                result_text = result_text[7:]
+            if result_text.endswith("```"):
+                result_text = result_text[:-3]
+                
+            data = json.loads(result_text)
+            return data
+            
+        except Exception as e:
+            print(f"Failed on Ollama endpoint {url}: {str(e)}")
+            last_error = e
+            continue
+            
+    raise HTTPException(status_code=500, detail=f"LLM processing failed on all configured endpoints. Last error: {str(last_error)}")
+

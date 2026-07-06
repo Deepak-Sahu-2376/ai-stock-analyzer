@@ -769,7 +769,8 @@ async function getIndexPseudoQuote(symbol) {
   return null;
 }
 
-// Simple in-memory cache for static stock data
+
+// Simple in-memory static stock data
 const cache = new Map();
 
 // Consolidated Stock Details (Quote) Proxy Endpoint
@@ -932,14 +933,19 @@ app.get('/api/stocks/peers/:symbol', async (req, res) => {
 app.get('/api/screener/golden-stocks', async (req, res) => {
   try {
     const query = `
-      SELECT symbol, sales_growth_ttm, profit_growth_ttm, roe_1y, cagr_1y
-      FROM stock_financials 
+      SELECT sf.symbol, sf.sales_growth_ttm, sf.profit_growth_ttm, sf.roe_1y, sf.cagr_1y,
+             sf.market_cap,
+             (SELECT order_value_cr FROM processed_order_announcements pba WHERE pba.symbol = sf.symbol ORDER BY created_at DESC LIMIT 1) as last_order_value_cr,
+             ROUND(
+               ( (SELECT order_value_cr FROM processed_order_announcements pba WHERE pba.symbol = sf.symbol ORDER BY created_at DESC LIMIT 1) / NULLIF(sf.market_cap, 0) ) * 100
+             , 2) as order_to_mcap_percent
+      FROM stock_financials sf
       WHERE 
-        sales_growth_10y > 0 AND sales_growth_5y > 0 AND sales_growth_3y > 0 AND sales_growth_ttm > 0
-        AND profit_growth_10y > 0 AND profit_growth_5y > 0 AND profit_growth_3y > 0 AND profit_growth_ttm > 0
-        AND roe_10y > 0 AND roe_5y > 0 AND roe_3y > 0 AND roe_1y > 0
-        AND cagr_1y < 0
-      ORDER BY cagr_1y ASC
+        sf.sales_growth_10y > 0 AND sf.sales_growth_5y > 0 AND sf.sales_growth_3y > 0 AND sf.sales_growth_ttm > 0
+        AND sf.profit_growth_10y > 0 AND sf.profit_growth_5y > 0 AND sf.profit_growth_3y > 0 AND sf.profit_growth_ttm > 0
+        AND sf.roe_10y > 0 AND sf.roe_5y > 0 AND sf.roe_3y > 0 AND sf.roe_1y > 0
+        AND sf.cagr_1y < 0
+      ORDER BY sf.cagr_1y ASC
     `;
     const result = await pool.query(query);
     res.json(result.rows);
@@ -955,6 +961,25 @@ app.get('/api/screener/:symbol', async (req, res) => {
   const { runScreenerAndSave } = require('./screenerParser');
   
   try {
+    // Fetch market cap on demand so it's instantly available
+    try {
+      const axios = require('axios');
+      const response = await axios.get(`https://www.screener.in/company/${symbol}/`, {
+        headers: { 'user-agent': 'Mozilla/5.0' }
+      });
+      const match = response.data.match(/Market Cap[\s\S]{0,100}?<span class="number">([^<]+)<\/span>/);
+      if (match && match[1]) {
+        const mc = parseFloat(match[1].replace(/,/g, ''));
+        if (!isNaN(mc)) {
+          // Insert first if not exists
+          await pool.query('INSERT INTO stock_financials (symbol) VALUES ($1) ON CONFLICT DO NOTHING', [symbol]);
+          await pool.query('UPDATE stock_financials SET market_cap = $1 WHERE symbol = $2', [mc, symbol]);
+        }
+      }
+    } catch (e) {
+      console.error(`Failed to fetch market cap on-demand for ${symbol}`, e.message);
+    }
+
     const data = await runScreenerAndSave(symbol);
     res.json(data);
   } catch (error) {
@@ -1206,7 +1231,151 @@ app.get('/api/announcements/summary/:symbol', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Failed to fetch AI summaries:', error);
-res.status(500).json({ error: 'Failed to fetch AI summaries' });
+    res.status(500).json({ error: 'Failed to fetch AI summaries' });
+  }
+});
+
+// Fetch all recent order announcements
+app.get('/api/announcements/orders/all', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        poa.news_id, poa.symbol, poa.ai_summary, poa.order_value_cr, poa.created_at, poa.anndate,
+        sf.market_cap,
+        ROUND((poa.order_value_cr / NULLIF(sf.market_cap, 0)) * 100, 2) as order_to_mcap_percent
+      FROM processed_order_announcements poa
+      LEFT JOIN stock_financials sf ON poa.symbol = sf.symbol
+      ORDER BY poa.created_at DESC
+      LIMIT 50
+    `);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Failed to fetch order announcements:', error);
+    res.status(500).json({ error: 'Failed to fetch order announcements' });
+  }
+});
+
+// Fetch or Generate AI Summary for latest Order Award
+app.get('/api/announcements/order-summary/:symbol', async (req, res) => {
+  try {
+    const { symbol } = req.params;
+    console.log(`[ORDER SUMMARY] Starting for ${symbol}. Referer: ${req.headers.referer || 'None'}, UA: ${req.headers['user-agent']}`);
+
+    
+    const nseData = await nseService.getIndexAnnouncements('equities', { 
+      symbol: symbol, 
+      subject: 'Awarding of order(s)/contract(s)'
+    });
+    console.log(`[ORDER SUMMARY] NSE data fetched for ${symbol}, count: ${nseData ? nseData.length : 0}`);
+    
+    if (!nseData || nseData.length === 0) {
+      return res.status(404).json({ error: 'No recent order awards found for this symbol.' });
+    }
+    
+    const latestAnn = nseData[0];
+    const newsId = latestAnn.seq_id;
+    console.log(`[ORDER SUMMARY] Checking DB for newsId: ${newsId}`);
+    
+    // Check if already processed
+    const dbCheck = await pool.query('SELECT * FROM processed_order_announcements WHERE news_id = $1', [newsId]);
+    if (dbCheck.rows.length > 0) {
+      console.log(`[ORDER SUMMARY] Found in DB for ${symbol}`);
+      return res.json(dbCheck.rows[0]);
+    }
+    
+    // Not processed. Let's process it.
+    const pdfUrl = latestAnn.attchmntFile;
+    console.log(`[ORDER SUMMARY] Fetching AI settings...`);
+    
+    // Get AI settings
+    const aiRes = await pool.query('SELECT * FROM ai_settings LIMIT 1');
+    const aiSettings = aiRes.rows[0];
+    let aiData = null;
+    
+    if (aiSettings.provider === 'gemini') {
+      console.log(`[ORDER SUMMARY] Using Gemini...`);
+      const geminiKey = aiSettings.active_gemini_key || process.env.GEMINI_API_KEY;
+      if (geminiKey) {
+        const { GoogleGenAI } = require('@google/genai');
+        const ai = new GoogleGenAI({ apiKey: geminiKey });
+        const pdfRes = await fetch(pdfUrl);
+        if (pdfRes.ok) {
+          const arrayBuffer = await pdfRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const aiResult = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: [
+              {
+                role: 'user',
+                parts: [
+                  { inlineData: { data: buffer.toString("base64"), mimeType: "application/pdf" } },
+                  { text: `Analyze this stock exchange order award announcement. Provide a concise 2-sentence summary. Most importantly, extract the total order value in Crores (INR). If the value is in Millions, divide by 10. If in Lakhs, divide by 100. If no exact value is found, output 0. Respond strictly in JSON format: {"summary": "...", "order_value_cr": 123.45}` }
+                ]
+              }
+            ]
+          });
+          let text = aiResult.text.trim();
+          if (text.startsWith("\`\`\`json")) text = text.substring(7, text.length - 3);
+          aiData = JSON.parse(text);
+        }
+      }
+    } else {
+      console.log(`[ORDER SUMMARY] Using local python service for ${pdfUrl}`);
+      const axios = require('axios');
+      const pyServiceUrl = 'http://localhost:8000/api/ai/summarize-order';
+      try {
+        const response = await axios.post(pyServiceUrl, {
+          pdf_url: pdfUrl,
+          ollama_url: aiSettings.active_ollama_url || aiSettings.ollama_url,
+          model_name: aiSettings.active_ollama_model || aiSettings.ollama_model,
+          symbol: symbol
+        }, { timeout: 60000 });
+        console.log(`[ORDER SUMMARY] Python response received`);
+        if (response.data && response.data.summary) {
+          aiData = response.data;
+        }
+      } catch (err) {
+        // Fallback or ignore if python service doesn't have this specific endpoint yet
+        console.error('Python BSE summary failed:', err.message);
+      }
+    }
+    
+    console.log(`[ORDER SUMMARY] Inserting into DB...`);
+    if (aiData) {
+      const orderValue = parseFloat(aiData.order_value_cr) || 0;
+      await pool.query(`
+        INSERT INTO processed_order_announcements (news_id, symbol, ai_summary, order_value_cr, anndate, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (news_id) DO NOTHING
+      `, [newsId, symbol, aiData.summary, orderValue, latestAnn.anndate]);
+      
+      console.log(`[ORDER SUMMARY] Done! returning success.`);
+      return res.json({
+        news_id: newsId,
+        symbol,
+        ai_summary: aiData.summary,
+        order_value_cr: orderValue,
+        anndate: latestAnn.anndate
+      });
+    } else {
+      const fallbackSummary = "Failed to generate summary: The original PDF document could not be retrieved from the servers (it may have been deleted).";
+      await pool.query(`
+        INSERT INTO processed_order_announcements (news_id, symbol, ai_summary, order_value_cr, anndate, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
+        ON CONFLICT (news_id) DO NOTHING
+      `, [newsId, symbol, fallbackSummary, 0, latestAnn.anndate]);
+
+      return res.json({
+        news_id: newsId,
+        symbol: symbol,
+        ai_summary: fallbackSummary,
+        order_value_cr: 0,
+        anndate: latestAnn.anndate
+      });
+    }
+  } catch (error) {
+    console.error('Failed to process BSE summary:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
   }
 });
 
