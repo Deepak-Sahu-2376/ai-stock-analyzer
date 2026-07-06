@@ -32,21 +32,38 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function Markets({ onSelectStock }) {
-  const [activeTab, setActiveTab] = useState('brdw');
+  const [activeTab, setActiveTab] = useState(() => sessionStorage.getItem('marketsActiveTab') || 'brdw');
   const [selectedIdx, setSelectedIdx] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [indicesData, setIndicesData] = useState({
+  const [marketIndicesData, setMarketIndicesData] = useState({
     brdw: {},
     sec: {},
     thematic: {},
     strtgy: {}
   });
+
+  const normalizeKey = (name) => name ? String(name).toUpperCase().replace(/\s+/g, '') : '';
   const [constituents, setConstituents] = useState([]);
   const [loadingConstituents, setLoadingConstituents] = useState(false);
-  const [viewMode, setViewMode] = useState('heatmaps'); // 'heatmaps' | 'announcements'
-  const [announcementsTab, setAnnouncementsTab] = useState('equities');
+  const [viewMode, setViewMode] = useState(() => sessionStorage.getItem('marketsViewMode') || 'heatmaps'); // 'heatmaps' | 'announcements' | 'orders'
+  const [announcementsTab, setAnnouncementsTab] = useState(() => sessionStorage.getItem('marketsAnnouncementsTab') || 'equities');
+
+  useEffect(() => {
+    sessionStorage.setItem('marketsActiveTab', activeTab);
+  }, [activeTab]);
+
+  useEffect(() => {
+    sessionStorage.setItem('marketsViewMode', viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    sessionStorage.setItem('marketsAnnouncementsTab', announcementsTab);
+  }, [announcementsTab]);
   const [announcementsData, setAnnouncementsData] = useState([]);
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(false);
+  const [orderAnnouncements, setOrderAnnouncements] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(false);
+  const [goldenSymbols, setGoldenSymbols] = useState(new Set());
   
   // Announcements Filters
   const [filterSymbol, setFilterSymbol] = useState('');
@@ -124,6 +141,27 @@ export default function Markets({ onSelectStock }) {
       fetchAnnouncements();
     }
   }, [viewMode, announcementsTab]);
+
+  useEffect(() => {
+    if (viewMode === 'orders') {
+      setLoadingOrders(true);
+      Promise.all([
+        api.getAllOrderAnnouncements(),
+        api.getGoldenStocks().catch(() => [])
+      ])
+        .then(([ordersData, goldenData]) => {
+          setOrderAnnouncements(Array.isArray(ordersData) ? ordersData : []);
+          if (Array.isArray(goldenData)) {
+            setGoldenSymbols(new Set(goldenData.map(g => g.symbol)));
+          }
+        })
+        .catch(e => {
+          console.error('Failed to fetch order announcements:', e);
+          setOrderAnnouncements([]);
+        })
+        .finally(() => setLoadingOrders(false));
+    }
+  }, [viewMode]);
 
   useEffect(() => {
     if (viewMode === 'announcements') {
@@ -210,7 +248,7 @@ export default function Markets({ onSelectStock }) {
 
   // Auto-select first index when tab changes or data loads
   useEffect(() => {
-    const currentTabIndices = Object.values(indicesData[activeTab] || {}).map(idx => idx.brdCstIndexName || idx.indexName);
+    const currentTabIndices = Object.values(marketIndicesData[activeTab] || {}).map(idx => idx.brdCstIndexName || idx.indexName);
     if (currentTabIndices.length > 0) {
       if (!selectedIdx || !currentTabIndices.includes(selectedIdx)) {
         // Find NIFTY 50 if available, otherwise just pick the first one
@@ -223,7 +261,7 @@ export default function Markets({ onSelectStock }) {
     } else {
       setSelectedIdx(null);
     }
-  }, [activeTab, indicesData]);
+  }, [activeTab, marketIndicesData]);
 
   useEffect(() => {
     let active = true;
@@ -236,11 +274,17 @@ export default function Markets({ onSelectStock }) {
         try {
           const data = JSON.parse(event.data);
           if (data && data.indexName && data.indexName !== 'HEARTBEAT') {
-            setIndicesData(prev => ({
+            const key = normalizeKey(data.indexName);
+            setMarketIndicesData(prev => ({
               ...prev,
               [type]: {
                 ...prev[type],
-                [data.indexName]: data
+                [key]: {
+                  ...(prev[type]?.[key] || {}),
+                  ...data,
+                  // Preserve the original name from REST if available for display
+                  indexName: prev[type]?.[key]?.indexName || data.indexName
+                }
               }
             }));
             setLoading(false);
@@ -270,18 +314,19 @@ export default function Markets({ onSelectStock }) {
         if (res && res.data) {
           const map = {};
           res.data.forEach(idx => {
-            const name = idx.indexName || idx.indexSymbol || idx.index;
-            if (name) {
-              map[name] = {
+            const rawName = idx.index || idx.indexName || idx.indexSymbol;
+            if (rawName) {
+              const key = normalizeKey(rawName);
+              map[key] = {
                 ...idx,
-                indexName: name,
+                indexName: rawName,
                 currentPrice: idx.last || idx.lastPrice,
                 perChange: idx.percChange || idx.percentChange || idx.pChange,
                 change: idx.change || idx.variation
               };
             }
           });
-          setIndicesData(prev => ({
+          setMarketIndicesData(prev => ({
             ...prev,
             [t.id]: { ...map, ...prev[t.id] }
           }));
@@ -310,18 +355,24 @@ export default function Markets({ onSelectStock }) {
             <p className="text-[11px] md:text-xs text-on-surface-variant">Track performance and find opportunities.</p>
           </div>
           
-          <div className="flex w-full sm:w-auto bg-surface-container-low p-1 rounded border border-border-subtle mt-4 sm:mt-0">
+          <div className="flex w-full sm:w-auto bg-surface-container-low p-1 rounded border border-border-subtle mt-4 sm:mt-0 overflow-x-auto hide-scrollbar">
           <button 
             onClick={() => setViewMode('heatmaps')}
-            className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'heatmaps' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`flex-1 sm:flex-none whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'heatmaps' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             Heatmaps
           </button>
           <button 
             onClick={() => setViewMode('announcements')}
-            className={`flex-1 sm:flex-none px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'announcements' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+            className={`flex-1 sm:flex-none whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'announcements' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
             Announcements
+          </button>
+          <button 
+            onClick={() => setViewMode('orders')}
+            className={`flex-1 sm:flex-none whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'orders' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
+          >
+            Order Awards
           </button>
         </div>
       </div>
@@ -353,7 +404,7 @@ export default function Markets({ onSelectStock }) {
 
         {/* Heatmap Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 p-4 sm:p-6">
-          {Object.keys(indicesData[activeTab] || {}).length === 0 ? (
+          {Object.keys(marketIndicesData[activeTab] || {}).length === 0 ? (
             Array.from({ length: 12 }).map((_, i) => (
               <div key={i} className="rounded-sm p-2 flex flex-col justify-between min-h-[60px] bg-surface-container-low animate-pulse border border-border-subtle/50">
                 <div className="h-3 w-3/4 bg-border-subtle rounded mb-1"></div>
@@ -363,7 +414,7 @@ export default function Markets({ onSelectStock }) {
                 </div>
               </div>
             ))
-          ) : Object.values(indicesData[activeTab] || {})
+          ) : Object.values(marketIndicesData[activeTab] || {})
             .sort((a, b) => {
               const perChangeA = parseFloat(a.perChange) || parseFloat(a.percentChange) || parseFloat(a.pChange) || 0;
               const perChangeB = parseFloat(b.perChange) || parseFloat(b.percentChange) || parseFloat(b.pChange) || 0;
@@ -435,7 +486,7 @@ export default function Markets({ onSelectStock }) {
                 </div>
               ))
             ) : constituents.length > 0 ? (() => {
-              const selectedIdxData = indicesData[activeTab]?.[selectedIdx];
+              const selectedIdxData = marketIndicesData[activeTab]?.[normalizeKey(selectedIdx)];
               const idxPerChange = selectedIdxData ? (parseFloat(selectedIdxData.perChange) || parseFloat(selectedIdxData.percentChange) || parseFloat(selectedIdxData.pChange) || 0) : 0;
               const isNegativeIdx = idxPerChange < 0;
               
@@ -613,6 +664,67 @@ export default function Markets({ onSelectStock }) {
               onSelectStock={onSelectStock} 
             />
           </ErrorBoundary>
+        </div>
+      )}
+
+      {/* Order Award AI Summaries View */}
+      {viewMode === 'orders' && (
+        <div className="bg-white border-b border-border-subtle mb-8 px-4 sm:px-6 py-6">
+          <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+            <span className="material-icons text-[#fbc02d] text-xl">emoji_events</span>
+            Recent Order Awards (AI Summarized)
+          </h3>
+          {loadingOrders ? (
+            <div className="animate-pulse space-y-3">
+              <div className="h-20 bg-surface-container-low rounded border border-border-subtle"></div>
+              <div className="h-20 bg-surface-container-low rounded border border-border-subtle"></div>
+            </div>
+          ) : orderAnnouncements.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {orderAnnouncements.map((order, idx) => {
+                const isGolden = goldenSymbols.has(order.symbol);
+                return (
+                <div 
+                  key={idx} 
+                  className={`p-4 rounded-md border shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between ${
+                    isGolden 
+                      ? 'bg-gradient-to-br from-[#fffcf2] to-[#fff8e1] border-[#fbc02d]' 
+                      : 'bg-surface-container-low border-border-subtle'
+                  }`}
+                  onClick={() => onSelectStock(order.symbol)}
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-2">
+                      <span className={`font-bold hover:underline uppercase text-sm flex items-center gap-1 ${isGolden ? 'text-[#b8860b]' : 'text-[#3b2c6e]'}`}>
+                        {order.symbol}
+                        {isGolden && <span className="material-icons text-[#fbc02d] text-sm">star</span>}
+                      </span>
+                      <span className="text-xs text-on-surface-variant font-mono">
+                        {order.anndate 
+                          ? new Date(order.anndate).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) 
+                          : new Date(order.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                    <p className="text-sm text-on-surface mb-3 line-clamp-3 leading-relaxed">{order.ai_summary}</p>
+                  </div>
+                  {order.order_value_cr > 0 && (
+                    <div className="flex gap-2 self-start">
+                      <div className="bg-[#e8f5e9] text-[#2e7d32] px-2 py-1 rounded text-xs font-semibold">
+                        Value: ₹{order.order_value_cr} Cr
+                      </div>
+                      {order.order_to_mcap_percent && (
+                        <div className="bg-[#e3f2fd] text-[#1565c0] px-2 py-1 rounded text-xs font-semibold">
+                          {order.order_to_mcap_percent}% of Mcap
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )})}
+            </div>
+          ) : (
+            <div className="text-sm text-on-surface-variant py-8 text-center">No recent order awards found.</div>
+          )}
         </div>
       )}
       </div>
