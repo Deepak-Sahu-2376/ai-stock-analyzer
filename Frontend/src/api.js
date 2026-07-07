@@ -14,8 +14,8 @@ export const api = {
     return res.json();
   },
 
-  getOrderBook: async (symbol) => {
-    const res = await fetch(`${API_BASE_URL}/stocks/orderbook/${encodeURIComponent(symbol)}`);
+  getOrderBook: async (symbol, series = 'EQ') => {
+    const res = await fetch(`${API_BASE_URL}/stocks/orderbook/${encodeURIComponent(symbol)}?series=${series}`);
     if (!res.ok) throw new Error('Failed to fetch order book');
     return res.json();
   },

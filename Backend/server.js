@@ -830,7 +830,9 @@ app.get('/api/stocks/quote/:symbol', async (req, res) => {
         announcements: corpAnnounceData.status === 'fulfilled' ? corpAnnounceData.value : null
       };
 
-      cache.set(symbol, staticData);
+      if (metaData) {
+        cache.set(symbol, staticData);
+      }
     }
 
     // Always fetch the live price/orderbook uncached
@@ -1269,7 +1271,7 @@ app.get('/api/announcements/order-summary/:symbol', async (req, res) => {
     console.log(`[ORDER SUMMARY] NSE data fetched for ${symbol}, count: ${nseData ? nseData.length : 0}`);
     
     if (!nseData || nseData.length === 0) {
-      return res.status(404).json({ error: 'No recent order awards found for this symbol.' });
+      return res.json(null);
     }
     
     const latestAnn = nseData[0];
@@ -1343,11 +1345,45 @@ app.get('/api/announcements/order-summary/:symbol', async (req, res) => {
     console.log(`[ORDER SUMMARY] Inserting into DB...`);
     if (aiData) {
       const orderValue = parseFloat(aiData.order_value_cr) || 0;
-      await pool.query(`
+      const insertRes = await pool.query(`
         INSERT INTO processed_order_announcements (news_id, symbol, ai_summary, order_value_cr, anndate, created_at)
         VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (news_id) DO NOTHING
       `, [newsId, symbol, aiData.summary, orderValue, latestAnn.anndate]);
+
+      if (insertRes.rowCount > 0) {
+        try {
+          const subs = await pool.query('SELECT * FROM push_subscriptions');
+          if (subs.rows.length > 0) {
+            const summaryText = aiData.summary + (orderValue > 0 ? ` (Value: ₹${orderValue} Cr)` : '');
+            const payload = JSON.stringify({
+              title: `AI Order Award: ${symbol}`,
+              body: summaryText,
+              icon: '/Stock_Island.svg',
+              url: `/quote/${symbol}?tab=orders`,
+              docUrl: pdfUrl
+            });
+            let sentCount = 0;
+            for (const sub of subs.rows) {
+              const pushSub = {
+                endpoint: sub.endpoint,
+                keys: { p256dh: sub.keys_p256dh, auth: sub.keys_auth }
+              };
+              try {
+                await webpush.sendNotification(pushSub, payload);
+                sentCount++;
+              } catch (pushErr) {
+                if (pushErr.statusCode === 410 || pushErr.statusCode === 404) {
+                  await pool.query('DELETE FROM push_subscriptions WHERE id = $1', [sub.id]);
+                }
+              }
+            }
+            console.log(`[ORDER SUMMARY] Push notifications sent to ${sentCount} devices.`);
+          }
+        } catch (pushErr) {
+          console.error('[ORDER SUMMARY] Error sending push notifications:', pushErr);
+        }
+      }
       
       console.log(`[ORDER SUMMARY] Done! returning success.`);
       return res.json({

@@ -88,13 +88,13 @@ export default function Navbar({ currentTab, setTab, onSearchStock }) {
           className="h-6 sm:h-7 w-auto object-contain"
           src="/Stock_Island.svg"
         />
-        <span className="hidden sm:block font-bold text-base text-[#1b1c1c] tracking-tight hover:text-primary transition-colors">
+        <span className="hidden lg:block font-bold text-base text-[#1b1c1c] tracking-tight hover:text-primary transition-colors">
           Stock Island
         </span>
       </div>
       
       {/* Navigation Links (Desktop Only) */}
-      <nav className="hidden md:flex gap-6 h-full items-center mr-auto">
+      <nav className="hidden md:flex gap-3 lg:gap-6 h-full items-center mr-auto">
         <button
           onClick={() => setTab('home')}
           className={`font-medium py-5 text-xs uppercase tracking-wider transition-all hover:text-primary ${
@@ -175,7 +175,7 @@ export default function Navbar({ currentTab, setTab, onSearchStock }) {
                 onChange={(e) => setSearchVal(e.target.value)}
                 onFocus={() => { if(suggestions.length > 0) setShowDropdown(true); }}
                 onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
-                className="bg-surface-container-low border border-border-subtle rounded text-xs text-on-surface pl-8 pr-4 py-2 sm:py-1.5 focus:ring-1 focus:ring-primary focus:border-primary w-full sm:w-64 placeholder-outline transition-all outline-none"
+                className="bg-surface-container-low border border-border-subtle rounded text-xs text-on-surface pl-8 pr-4 py-2 sm:py-1.5 focus:ring-1 focus:ring-primary focus:border-primary w-full sm:w-40 lg:w-64 placeholder-outline transition-all outline-none"
                 placeholder="Search markets..."
                 autoComplete="off"
               />

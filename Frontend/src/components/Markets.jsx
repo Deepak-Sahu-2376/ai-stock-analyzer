@@ -372,7 +372,7 @@ export default function Markets({ onSelectStock }) {
             onClick={() => setViewMode('orders')}
             className={`flex-1 sm:flex-none whitespace-nowrap px-4 py-2 text-sm font-semibold rounded-md transition-colors ${viewMode === 'orders' ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}`}
           >
-            Order Awards
+            Order Book
           </button>
         </div>
       </div>
@@ -667,12 +667,12 @@ export default function Markets({ onSelectStock }) {
         </div>
       )}
 
-      {/* Order Award AI Summaries View */}
+      {/* Order Book AI Summaries View */}
       {viewMode === 'orders' && (
         <div className="bg-white border-b border-border-subtle mb-8 px-4 sm:px-6 py-6">
           <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
             <span className="material-icons text-[#fbc02d] text-xl">emoji_events</span>
-            Recent Order Awards (AI Summarized)
+            Recent Order Book (AI Summarized)
           </h3>
           {loadingOrders ? (
             <div className="animate-pulse space-y-3">
@@ -723,7 +723,7 @@ export default function Markets({ onSelectStock }) {
               )})}
             </div>
           ) : (
-            <div className="text-sm text-on-surface-variant py-8 text-center">No recent order awards found.</div>
+            <div className="text-sm text-on-surface-variant py-8 text-center">No recent order book found.</div>
           )}
         </div>
       )}

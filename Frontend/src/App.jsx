@@ -1,22 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Navbar from './components/Navbar';
 import BottomNav from './components/BottomNav';
 import Footer from './components/Footer';
-import Home from './components/Home';
-import Markets from './components/Markets';
-import QuoteDetail from './components/QuoteDetail';
-import Login from './components/Login';
-import SignUp from './components/SignUp';
-import ForgotPassword from './components/ForgotPassword';
-import Dashboard from './components/Dashboard';
-import AdminDashboard from './components/AdminDashboard';
-import Blogs from './components/Blogs';
-import GoldenScreener from './components/GoldenScreener';
+import TopTicker from './components/TopTicker';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import { api } from './api';
 
-import TopTicker from './components/TopTicker';
-
-import ScrollToTopButton from './components/ScrollToTopButton';
+const Home = React.lazy(() => import('./components/Home'));
+const Markets = React.lazy(() => import('./components/Markets'));
+const QuoteDetail = React.lazy(() => import('./components/QuoteDetail'));
+const Login = React.lazy(() => import('./components/Login'));
+const SignUp = React.lazy(() => import('./components/SignUp'));
+const ForgotPassword = React.lazy(() => import('./components/ForgotPassword'));
+const Dashboard = React.lazy(() => import('./components/Dashboard'));
+const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
+const Blogs = React.lazy(() => import('./components/Blogs'));
+const GoldenScreener = React.lazy(() => import('./components/GoldenScreener'));
 
 function App() {
 
@@ -116,7 +115,7 @@ function App() {
   }, [currentTab, selectedSymbol]);
 
   return (
-    <div className="min-h-[100dvh] flex flex-col bg-white text-on-surface pb-16 md:pb-0">
+    <div className="min-h-[100dvh] w-full overflow-x-hidden flex flex-col bg-white text-on-surface pb-16 md:pb-0">
       <Navbar 
         currentTab={currentTab} 
         setTab={setTab} 
@@ -124,34 +123,50 @@ function App() {
       />
       <TopTicker />
       <div className="order-3 flex-1 flex flex-col relative">
-        <div className={currentTab === 'home' ? 'flex-1 flex flex-col' : 'hidden'}>
-          <Home setTab={setTab} onSelectStock={handleSelectStock} />
-        </div>
-        <div className={currentTab === 'markets' ? 'flex-1 flex flex-col' : 'hidden'}>
-          <Markets onSelectStock={handleSelectStock} />
-        </div>
-        <div className={currentTab === 'quote' ? 'flex-1 flex flex-col' : 'hidden'}>
-          <QuoteDetail symbol={selectedSymbol} />
-        </div>
-        <div className={currentTab === 'blogs' ? 'flex-1 flex flex-col' : 'hidden'}>
-          <Blogs />
-        </div>
-        <div className={currentTab === 'dashboard' ? 'flex-1 flex flex-col' : 'hidden'}>
-          {currentTab === 'dashboard' && <Dashboard setTab={setTab} onSelectStock={handleSelectStock} />}
-        </div>
-        <div className={currentTab === 'screener' ? 'flex-1 flex flex-col' : 'hidden'}>
-          {currentTab === 'screener' && <GoldenScreener onSelectStock={handleSelectStock} />}
-        </div>
-        <div className={currentTab === 'admin' ? 'flex-1 flex flex-col' : 'hidden'}>
-          {currentTab === 'admin' && <AdminDashboard setTab={setTab} />}
-        </div>
-        {['login', 'signup', 'forgot_password'].includes(currentTab) && (
-          <div className="flex-1 flex flex-col">
-            {currentTab === 'login' && <Login setTab={setTab} />}
-            {currentTab === 'signup' && <SignUp setTab={setTab} />}
-            {currentTab === 'forgot_password' && <ForgotPassword setTab={setTab} />}
-          </div>
-        )}
+        <Suspense fallback={<div className="flex-1 flex items-center justify-center p-8"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div></div>}>
+          {currentTab === 'home' && (
+            <div className="flex-1 flex flex-col">
+              <Home setTab={setTab} onSelectStock={handleSelectStock} />
+            </div>
+          )}
+          {currentTab === 'markets' && (
+            <div className="flex-1 flex flex-col">
+              <Markets onSelectStock={handleSelectStock} />
+            </div>
+          )}
+          {currentTab === 'quote' && (
+            <div className="flex-1 flex flex-col">
+              <QuoteDetail key={selectedSymbol} symbol={selectedSymbol} />
+            </div>
+          )}
+          {currentTab === 'blogs' && (
+            <div className="flex-1 flex flex-col">
+              <Blogs />
+            </div>
+          )}
+          {currentTab === 'dashboard' && (
+            <div className="flex-1 flex flex-col">
+              <Dashboard setTab={setTab} onSelectStock={handleSelectStock} />
+            </div>
+          )}
+          {currentTab === 'screener' && (
+            <div className="flex-1 flex flex-col">
+              <GoldenScreener onSelectStock={handleSelectStock} />
+            </div>
+          )}
+          {currentTab === 'admin' && (
+            <div className="flex-1 flex flex-col">
+              <AdminDashboard setTab={setTab} />
+            </div>
+          )}
+          {['login', 'signup', 'forgot_password'].includes(currentTab) && (
+            <div className="flex-1 flex flex-col">
+              {currentTab === 'login' && <Login setTab={setTab} />}
+              {currentTab === 'signup' && <SignUp setTab={setTab} />}
+              {currentTab === 'forgot_password' && <ForgotPassword setTab={setTab} />}
+            </div>
+          )}
+        </Suspense>
       </div>
       {currentTab !== 'home' && <Footer setTab={setTab} />}
       <BottomNav currentTab={currentTab} setTab={setTab} />

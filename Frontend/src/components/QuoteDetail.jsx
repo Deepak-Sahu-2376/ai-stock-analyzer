@@ -226,17 +226,17 @@ const mapApiQuoteToFrontendStock = (apiData, fallbackMock) => {
     const secDetails = realPriceInfo.secInfo || {};
 
     priceInfo = {
-      lastPrice: realPriceInfo.orderBook?.lastPrice || tradeInfo.lastPrice || metadata.lastPrice || fallbackMock.price,
+      lastPrice: (realPriceInfo.orderBook?.lastPrice !== undefined && realPriceInfo.orderBook?.lastPrice !== null) ? realPriceInfo.orderBook.lastPrice : ((tradeInfo.lastPrice !== undefined && tradeInfo.lastPrice !== null) ? tradeInfo.lastPrice : ((metadata.lastPrice !== undefined && metadata.lastPrice !== null) ? metadata.lastPrice : fallbackMock.price)),
       change: metadata.change !== undefined ? metadata.change : fallbackMock.change,
       pChange: metadata.pChange !== undefined ? metadata.pChange : fallbackMock.percent,
-      open: metadata.open || fallbackMock.open,
-      close: metadata.closePrice || fallbackMock.close,
-      previousClose: metadata.previousClose || metadata.basePrice || fallbackMock.prevClose,
-      vwap: metadata.averagePrice || fallbackMock.vwap
+      open: (metadata.open !== undefined && metadata.open !== null) ? metadata.open : fallbackMock.open,
+      close: (metadata.closePrice !== undefined && metadata.closePrice !== null) ? metadata.closePrice : fallbackMock.close,
+      previousClose: (metadata.previousClose !== undefined && metadata.previousClose !== null) ? metadata.previousClose : ((metadata.basePrice !== undefined && metadata.basePrice !== null) ? metadata.basePrice : fallbackMock.prevClose),
+      vwap: (metadata.averagePrice !== undefined && metadata.averagePrice !== null) ? metadata.averagePrice : fallbackMock.vwap
     };
 
-    high = metadata.dayHigh || fallbackMock.high;
-    low = metadata.dayLow || fallbackMock.low;
+    high = (metadata.dayHigh !== undefined && metadata.dayHigh !== null) ? metadata.dayHigh : fallbackMock.high;
+    low = (metadata.dayLow !== undefined && metadata.dayLow !== null) ? metadata.dayLow : fallbackMock.low;
     yearHigh = priceDetails.yearHigh || fallbackMock.price * 1.07;
     yearLow = priceDetails.yearLow || fallbackMock.price * 0.78;
     volume = tradeInfo.totalTradedVolume || tradeInfo.quantityTraded;
@@ -313,7 +313,7 @@ const mapApiQuoteToFrontendStock = (apiData, fallbackMock) => {
     }));
   }
 
-  const lastPrice = priceInfo.lastPrice || fallbackMock.price;
+  const lastPrice = (priceInfo.lastPrice !== undefined && priceInfo.lastPrice !== null) ? priceInfo.lastPrice : fallbackMock.price;
   const change = priceInfo.change !== undefined ? priceInfo.change : fallbackMock.change;
   const pChangeVal = priceInfo.pChange !== undefined ? priceInfo.pChange : parseFloat(fallbackMock.percent);
   const pChange = (pChangeVal >= 0 ? '+' : '') + parseFloat(pChangeVal).toFixed(2) + '%';
@@ -330,14 +330,14 @@ const mapApiQuoteToFrontendStock = (apiData, fallbackMock) => {
     change: parseFloat(change),
     percent: pChange,
     up,
-    prevClose: parseFloat(priceInfo.previousClose || fallbackMock.prevClose),
-    open: parseFloat(priceInfo.open || fallbackMock.open),
-    high: parseFloat(high || fallbackMock.high),
-    low: parseFloat(low || fallbackMock.low),
-    yearHigh: parseFloat(yearHigh || fallbackMock.price * 1.07),
-    yearLow: parseFloat(yearLow || fallbackMock.price * 0.78),
-    close: parseFloat(priceInfo.close || fallbackMock.close),
-    vwap: parseFloat(priceInfo.vwap || fallbackMock.vwap),
+    prevClose: parseFloat((priceInfo.previousClose !== undefined && priceInfo.previousClose !== null) ? priceInfo.previousClose : fallbackMock.prevClose),
+    open: parseFloat((priceInfo.open !== undefined && priceInfo.open !== null) ? priceInfo.open : fallbackMock.open),
+    high: parseFloat((high !== undefined && high !== null) ? high : fallbackMock.high),
+    low: parseFloat((low !== undefined && low !== null) ? low : fallbackMock.low),
+    yearHigh: parseFloat((yearHigh !== undefined && yearHigh !== null) ? yearHigh : fallbackMock.price * 1.07),
+    yearLow: parseFloat((yearLow !== undefined && yearLow !== null) ? yearLow : fallbackMock.price * 0.78),
+    close: parseFloat((priceInfo.close !== undefined && priceInfo.close !== null) ? priceInfo.close : fallbackMock.close),
+    vwap: parseFloat((priceInfo.vwap !== undefined && priceInfo.vwap !== null) ? priceInfo.vwap : fallbackMock.vwap),
     volume: volume ? (volume / 100000).toFixed(2) : parseFloat(formatNumberStr(fallbackMock.volume)),
     value: value ? (value / 10000000).toFixed(2) : parseFloat(formatNumberStr(fallbackMock.value)),
     marketCap: marketCap ? Number((marketCap / 10000000).toFixed(2)).toLocaleString('en-IN') : fallbackMock.marketCap.replace(' Cr.', ''),
@@ -506,9 +506,9 @@ export default function QuoteDetail({ symbol }) {
   const [screenerLoading, setScreenerLoading] = useState(false);
   const [aiSummaries, setAiSummaries] = useState([]);
   const [aiSummariesLoading, setAiSummariesLoading] = useState(false);
-  const [orderSummary, setOrderSummary] = useState(null);
+  const [orderSummary, setOrderSummary] = useState(undefined);
   const [orderSummaryLoading, setOrderSummaryLoading] = useState(false);
-  const [orderAnnouncements, setOrderAnnouncements] = useState([]);
+  const [orderAnnouncements, setOrderAnnouncements] = useState(undefined);
   const [orderAnnouncementsLoading, setOrderAnnouncementsLoading] = useState(false);
 
   const handleToggleWishlist = async () => {
@@ -559,6 +559,7 @@ export default function QuoteDetail({ symbol }) {
     let lastStatusRes = null;
     let currentSeries = 'EQ';
     let apiQuoteCache = null;
+    let hasCriticalError = false;
 
     async function loadStockData(isBackground = false, onlyOrderBook = false) {
       if (!isBackground) {
@@ -566,6 +567,11 @@ export default function QuoteDetail({ symbol }) {
         setError(null);
         setStock(null);
         setChartData([]);
+        setAiSummaries([]);
+        setOrderSummary(undefined);
+        setOrderAnnouncements(undefined);
+        setScreenerData([]);
+        setPeersData([]);
       }
       try {
         const fallbackMock = getStockData(symbol);
@@ -682,6 +688,9 @@ export default function QuoteDetail({ symbol }) {
         }
       } catch (err) {
         console.error('Error fetching stock quote/chart from API:', err);
+        if (err.message && err.message.includes('404')) {
+          hasCriticalError = true;
+        }
         if (active && !isBackground) {
           setError(err.message || 'Failed to fetch stock data from NSE');
         }
@@ -697,7 +706,7 @@ export default function QuoteDetail({ symbol }) {
 
     // Refresh stock data every 1s to keep order book alive!
     const intervalId = setInterval(() => {
-      if (active) loadStockData(true, true); // true for isBackground, true for onlyOrderBook
+      if (active && !hasCriticalError) loadStockData(true, true); // true for isBackground, true for onlyOrderBook
     }, 1000);
 
     // Direct NSE WebSocket for real-time live price ticks! (Zero backend load)
@@ -760,6 +769,7 @@ export default function QuoteDetail({ symbol }) {
 
   useEffect(() => {
     async function fetchAiSummaries() {
+      if ((activeSubTab !== 'announcements' && activeSubTab !== 'dashboard') || aiSummaries.length > 0) return;
       setAiSummariesLoading(true);
       try {
         const summaries = await api.getAnnouncementsSummary(symbol);
@@ -771,10 +781,11 @@ export default function QuoteDetail({ symbol }) {
       }
     }
     fetchAiSummaries();
-  }, [symbol]);
+  }, [symbol, activeSubTab]);
 
   useEffect(() => {
     async function fetchOrderSummary() {
+      if (activeSubTab !== 'orders' || orderSummary !== undefined) return;
       setOrderSummaryLoading(true);
       try {
         const result = await api.getOrderSummary(symbol);
@@ -787,10 +798,11 @@ export default function QuoteDetail({ symbol }) {
       }
     }
     fetchOrderSummary();
-  }, [symbol]);
+  }, [symbol, activeSubTab]);
 
   useEffect(() => {
     async function fetchOrderAnnouncements() {
+      if (activeSubTab !== 'orders' || orderAnnouncements !== undefined) return;
       setOrderAnnouncementsLoading(true);
       try {
         const result = await api.getAnnouncements('equities', { symbol, subject: 'Awarding of order(s)/contract(s)' });
@@ -803,7 +815,7 @@ export default function QuoteDetail({ symbol }) {
       }
     }
     fetchOrderAnnouncements();
-  }, [symbol]);
+  }, [symbol, activeSubTab]);
 
 
   useEffect(() => {
@@ -1085,7 +1097,7 @@ export default function QuoteDetail({ symbol }) {
           className={`py-3 text-xs font-bold uppercase tracking-wider transition-all whitespace-nowrap ${activeSubTab === 'orders' ? 'text-primary border-b-2 border-primary -mb-[2px]' : 'text-on-surface-variant hover:text-on-surface'
             }`}
         >
-          Order Awards
+          Order Book
         </button>
         <button
           onClick={() => setActiveSubTab('actions')}
@@ -1153,11 +1165,11 @@ export default function QuoteDetail({ symbol }) {
           </section>
 
           {/* Order Book & Chart */}
-          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+          <section className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch w-full">
             {/* Left Sidebar: Order Book & Trading Widget */}
-            <div className="lg:col-span-3 flex flex-col gap-4">
+            <div className="w-full lg:col-span-3 flex flex-col gap-4 order-2 lg:order-1">
               {/* Order Book */}
-              <div className="bg-white border-b-[8px] border-[#f1f1f1] flex flex-col overflow-hidden h-[320px]">
+              <div className="w-full bg-white border-b-[8px] border-[#f1f1f1] flex flex-col overflow-hidden h-[320px]">
                 <div className="p-3 bg-surface-bright border-b border-border-subtle font-bold text-xs uppercase text-on-surface">
                   Order Book
                 </div>
@@ -1202,7 +1214,7 @@ export default function QuoteDetail({ symbol }) {
             </div>
 
             {/* Chart Area */}
-            <div className="lg:col-span-9 bg-white border-b-[8px] border-[#f1f1f1] flex flex-col p-4 sm:p-6 min-h-[300px]">
+            <div className="lg:col-span-9 bg-white border-b-[8px] border-[#f1f1f1] flex flex-col p-4 sm:p-6 min-h-[300px] order-1 lg:order-2">
               <div className="flex justify-between items-center w-full mb-4">
                 <div className="flex gap-1">
                   {['1D', '1W', '1M', '1Y'].map(r => (
@@ -1229,8 +1241,8 @@ export default function QuoteDetail({ symbol }) {
               </div>
 
               {/* Responsive Container */}
-              <div className="flex-1 w-full bg-surface-bright rounded border border-border-subtle relative p-2 overflow-hidden">
-                <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+              <div className="flex-1 w-full bg-surface-bright rounded border border-border-subtle relative p-2 overflow-hidden h-[300px]">
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                     <defs>
                       <linearGradient id="chartGrad" x1="0%" x2="0%" y1="0%" y2="100%">
@@ -1645,7 +1657,7 @@ export default function QuoteDetail({ symbol }) {
       {/* Orders View */}
       {activeSubTab === 'orders' && (
         <section className="bg-white border-b-[8px] border-[#f1f1f1] p-4 sm:p-6 space-y-0">
-          <h3 className="font-bold text-base text-on-surface mb-2">Order Awards</h3>
+          <h3 className="font-bold text-base text-on-surface mb-2">Order Book</h3>
           
           {orderSummaryLoading ? (
             <div className="mb-4 p-3 bg-[#e8f0fe] rounded border border-[#aecbfa] text-xs text-[#1967d2] flex items-center gap-2">
@@ -1695,7 +1707,7 @@ export default function QuoteDetail({ symbol }) {
             ))
           ) : (
             <div className="p-4 text-center text-on-surface-variant italic border border-border-subtle rounded bg-surface-container-low/50">
-              No recent order awards found.
+              No recent order book found.
             </div>
           )}
         </section>
